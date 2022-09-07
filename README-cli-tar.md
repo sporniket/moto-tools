@@ -24,6 +24,8 @@ Extract all the files contained inside a tape archive readable by MO5 emulators.
 
 * `--create` or `--list` or `--extract` : the operation to perform.
 
+* `--file <archive.k7>` : the tape archive, usually a file with the `k7` extension.
+
 * `source files` : one or more files of any type.
 
 ## Optional arguments
