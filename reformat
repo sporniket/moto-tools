@@ -1,0 +1,3 @@
+#!/bin/bash
+# force coding style
+python3 -m black .
