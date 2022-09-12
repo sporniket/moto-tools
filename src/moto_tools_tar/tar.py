@@ -58,7 +58,7 @@ If not, see <https://www.gnu.org/licenses/>. 
         parser.add_argument(
             "sources",
             metavar="source files",
-            type=FileType("r"),
+            type=str,
             nargs="+",
             help="a list of source files",
         )
@@ -123,6 +123,6 @@ If not, see <https://www.gnu.org/licenses/>. 
         sources = args.sources
         print(f"Given source files : {len(sources)}")
         for s in sources:
-            print(f"Processing {s.name}...")
+            print(f"Processing {s}...")
 
         print("Done")
