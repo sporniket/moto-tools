@@ -3,32 +3,32 @@
 ## Synopsis
 
 ```
-python3 -m moto_tools_tar --create --file <archive.k7> [--verbose] [--into <path>] <source-files>...
+python3 -m moto_tools_tar --create [--verbose] [--into <path>] <archive.k7> [<source-files>...]
 ```
 
-Assemble the designated files into a tape archive readable by MO5 emulators. The resulting file is padded to reach 21 kiB.
+Assemble the designated files into a tape archive readable by MO5 emulators. The resulting file is padded to reach 21 kiB. When there is no source files, a blank tape archive is created.
 
 ```
-python3 -m moto_tools_tar --list --file <archive.k7> [--verbose]
+python3 -m moto_tools_tar --list [--verbose] <archive.k7>
 ```
 
 List all the files contained inside a tape archive readable by MO5 emulators.
 
 ```
-python3 -m moto_tools_tar --extract --file <archive.k7> [--verbose] [--into <path>]
+python3 -m moto_tools_tar --extract [--verbose] [--into <path>] <archive.k7>
 ```
 
 Extract all the files contained inside a tape archive readable by MO5 emulators.
 
 ## Mandatory arguments
 
-* `--create` or `--list` or `--extract` : the operation to perform.
+* `--create <archive.k7>` or `--list <archive.k7>` or `--extract <archive.k7>` : the operation to perform.
 
-* `--file <archive.k7>` : the tape archive, usually a file with the `k7` extension.
-
-* `source files` : one or more files of any type.
+* `<archive.k7>` : the specified tape archive, usually a file with the `k7` extension.
 
 ## Optional arguments
+
+* `source files` : one or more files of any type.
 
 * `--verbose` : each processed files is displayed in a tabulated format, showing
 

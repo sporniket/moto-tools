@@ -56,10 +56,17 @@ If not, see <https://www.gnu.org/licenses/>. 
 
         # Add the arguments
         parser.add_argument(
-            "sources",
-            metavar="source files",
+            "archive",
+            metavar="<archive.k7>",
             type=str,
-            nargs="+",
+            help="the designated tape archive",
+        )
+
+        parser.add_argument(
+            "sources",
+            metavar="<source file>",
+            type=str,
+            nargs="*",
             help="a list of source files",
         )
 
@@ -67,7 +74,7 @@ If not, see <https://www.gnu.org/licenses/>. 
         commandGroup.add_argument(
             "--create",
             action="store_true",
-            help=f"Assemble the designated files into a tape archive.",
+            help=f"Assemble the designated files into the designated tape archive.",
         )
         commandGroup.add_argument(
             "--list",
@@ -87,17 +94,7 @@ If not, see <https://www.gnu.org/licenses/>. 
         )
 
         parser.add_argument(
-            "--file",
-            action="store",
-            type=str,
-            required=True,
-            help=f"The file name of the tape archive.",
-        )
-        parser.add_argument(
             "--into",
-            action="store",
-            type=str,
-            required=False,
             help="directory where output files will be generated.",
         )
         return parser
@@ -108,7 +105,7 @@ If not, see <https://www.gnu.org/licenses/>. 
     def run(self) -> Optional[int]:
         args = TapeArchiveCli.createArgParser().parse_args()
 
-        print(f"Archive file : {args.file}")
+        print(f"Archive : {args.archive}")
 
         if args.verbose:
             print("Verbose mode")
@@ -122,7 +119,10 @@ If not, see <https://www.gnu.org/licenses/>. 
 
         sources = args.sources
         print(f"Given source files : {len(sources)}")
-        for s in sources:
-            print(f"Processing {s}...")
+        if (len(sources) == 0) and args.create:
+            printf(f"Create blank tape archive...")
+        else:
+            for s in sources:
+                print(f"Processing {s}...")
 
         print("Done")
