@@ -110,10 +110,6 @@ If not, see <https://www.gnu.org/licenses/>. 
         if args.verbose:
             print("Verbose mode")
 
-        print(
-            f"action : Creation {args.create} ; Listing {args.list} ; Extraction {args.extract}"
-        )
-
         if args.into:
             print(f"into {args.into}")
 
@@ -124,5 +120,59 @@ If not, see <https://www.gnu.org/licenses/>. 
         else:
             for s in sources:
                 print(f"Processing {s}...")
+
+        if args.create:
+            print("NOT YET IMPLEMENTED : Creating...")
+        elif args.list:
+            print("Listing...")
+            startOfBlockSequence = bytes(
+                [
+                    0x01,
+                    0x01,
+                    0x01,
+                    0x01,
+                    0x01,
+                    0x01,
+                    0x01,
+                    0x01,
+                    0x01,
+                    0x01,
+                    0x3C,
+                    0x5A,
+                ]
+            )
+            with open(args.archive, "rb") as tar:
+                tarContent = tar.read()
+                startFrom = 0
+                blockCount = 0
+                while startFrom < len(tarContent):
+                    next = tarContent.find(startOfBlockSequence, startFrom)
+                    if next == -1:
+                        startFrom = len(tarContent)
+                    else:
+                        startFrom = next + len(startOfBlockSequence)
+                        if (
+                            tarContent[startFrom] == 0
+                            and tarContent[startFrom + 1] == 16
+                        ):
+                            fileName = tarContent[
+                                startFrom + 2 : startFrom + 10
+                            ].decode("utf-8")
+                            fileExtension = tarContent[
+                                startFrom + 10 : startFrom + 13
+                            ].decode("utf-8")
+                            fileType = tarContent[startFrom + 13]
+                            fileMode = (
+                                tarContent[startFrom + 14] * 256
+                                + tarContent[startFrom + 15]
+                            )
+                            checksum = tarContent[startFrom + 16]
+                            print(
+                                f"{fileName}.{fileExtension} Type {fileType} Mode {fileMode} Checksum {checksum} at block #{blockCount}"
+                            )
+                        blockCount = blockCount + 1
+
+        elif args.extract:
+            print("NOT YET IMPLEMENTED : Extracting...")
 
         print("Done")
