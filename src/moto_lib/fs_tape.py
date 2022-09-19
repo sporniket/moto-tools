@@ -51,7 +51,11 @@ class TapeBloc:
         return self.rawData[2:-1]  # FIXME
 
     def isValid(self):
-        pass
+        sum = 0
+        for byte in self.body:
+            sum = (sum + byte) & 0xFF
+        checksum = 0x100 - sum
+        return checksum == self.checksum
 
 
 class LeaderTapeBlocDescriptor:
