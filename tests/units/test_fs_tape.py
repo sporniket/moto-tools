@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
-from moto_lib.fs_tape import TapeBloc
+from moto_lib.fs_tape import TapeBloc, LeaderTapeBlocDescriptor
 import pytest
 
 
@@ -74,3 +74,29 @@ def test_tape_bloc_with_invalid_checksum_should_be_invalid():
         )
     )
     assert but.isValid() == False
+
+
+def test_leader_tape_bloc_descriptor_can_create_tape_bloc():
+    assert LeaderTapeBlocDescriptor(
+        "banner", "bas", 0, 0
+    ).toTapeBloc().rawData == bytes(
+        [
+            0x00,
+            0x10,
+            0x42,
+            0x41,
+            0x4E,
+            0x4E,
+            0x45,
+            0x52,
+            0x20,
+            0x20,
+            0x42,
+            0x41,
+            0x53,
+            0x00,
+            0x00,
+            0x00,
+            0x34,
+        ]
+    )
