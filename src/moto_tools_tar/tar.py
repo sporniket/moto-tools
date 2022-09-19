@@ -116,7 +116,7 @@ If not, see <https://www.gnu.org/licenses/>. 
         sources = args.sources
         print(f"Given source files : {len(sources)}")
         if (len(sources) == 0) and args.create:
-            printf(f"Create blank tape archive...")
+            print(f"Create blank tape archive...")
         else:
             for s in sources:
                 print(f"Processing {s}...")
