@@ -72,22 +72,26 @@ If not, see <https://www.gnu.org/licenses/>. 
 
         commandGroup = parser.add_mutually_exclusive_group(required=True)
         commandGroup.add_argument(
+            "-c",
             "--create",
             action="store_true",
             help=f"Assemble the designated files into the designated tape archive.",
         )
         commandGroup.add_argument(
+            "-l",
             "--list",
             action="store_true",
             help=f"List all the files contained inside the designated tape archive.",
         )
         commandGroup.add_argument(
+            "-x",
             "--extract",
             action="store_true",
             help=f"Extract all the files contained inside the designated tape archive.",
         )
 
         parser.add_argument(
+            "-v",
             "--verbose",
             action="store_true",
             help=f"When present, each processed files is displayed in a tabulated format.",
@@ -176,7 +180,3 @@ If not, see <https://www.gnu.org/licenses/>. 
             print("NOT YET IMPLEMENTED : Extracting...")
 
         print("Done")
-
-
-def main():
-    sys.exit(TapeArchiveCli().run())
