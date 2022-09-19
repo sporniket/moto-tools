@@ -1,21 +1,21 @@
-# The command line interface of moto_tools_tar
+# The command line interface of moto_tar
 
 ## Synopsis
 
 ```
-python3 -m moto_tools_tar --create [--verbose] [--into <path>] <archive.k7> [<source-files>...]
+python3 -m moto_tar --create [--verbose] [--into <path>] <archive.k7> [<source-files>...]
 ```
 
 Assemble the designated files into a tape archive readable by MO5 emulators. The resulting file is padded to reach 21 kiB. When there is no source files, a blank tape archive is created.
 
 ```
-python3 -m moto_tools_tar --list [--verbose] <archive.k7>
+python3 -m moto_tar --list [--verbose] <archive.k7>
 ```
 
 List all the files contained inside a tape archive readable by MO5 emulators.
 
 ```
-python3 -m moto_tools_tar --extract [--verbose] [--into <path>] <archive.k7>
+python3 -m moto_tar --extract [--verbose] [--into <path>] <archive.k7>
 ```
 
 Extract all the files contained inside a tape archive readable by MO5 emulators.

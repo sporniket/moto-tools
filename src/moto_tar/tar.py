@@ -176,3 +176,7 @@ If not, see <https://www.gnu.org/licenses/>. 
             print("NOT YET IMPLEMENTED : Extracting...")
 
         print("Done")
+
+
+def main():
+    sys.exit(TapeArchiveCli().run())

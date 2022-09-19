@@ -6,7 +6,7 @@ rm -Rf .pytest_cache
 python3 -m black .
 # rebuild, install and test
 python3 -m build && python3 -m pip install --force-reinstall dist/*.whl && \
-python3 -m coverage run --source=moto_lib --branch -m pytest && \
+python3 -m coverage run --source=moto_lib,moto_tar --branch -m pytest && \
 python3 -m coverage report -m && \
 python3 -m coverage html 
 
