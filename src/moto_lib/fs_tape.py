@@ -72,6 +72,7 @@ class LeaderTapeBlocDescriptor:
         )
 
     def toTapeBloc(self) -> TapeBloc:
+        rawData = bytearray(17) # bloc type(1), bloc length (1), name (8), extension (3), type (1), mode (2), checksum (1)
         return TapeBloc(rawData)
 
 
