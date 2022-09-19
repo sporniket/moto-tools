@@ -22,5 +22,10 @@ import sys
 
 from .tar import TapeArchiveCli
 
-if __name__ == "__main__":
+
+def main():
     sys.exit(TapeArchiveCli().run())
+
+
+if __name__ == "__main__":
+    main()
