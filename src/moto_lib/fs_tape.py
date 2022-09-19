@@ -30,6 +30,24 @@ class TypeOfTapeBloc(IntEnum):
 
 
 class TapeBloc:
+    @staticmethod
+    def computeChecksum(data):
+        sum = 0
+        for byte in data:
+            sum = (sum + byte) & 0xFF
+        checksum = 0x100 - sum
+        return checksum
+
+    @staticmethod
+    def buildFromData(data, type: TypeOfTapeBloc = TypeOfTapeBloc.DATA):
+        return TapeBloc(
+            bytes(
+                bytes([type.value, len(data) + 2])
+                + data
+                + bytes([TapeBloc.computeChecksum(data)])
+            )
+        )
+
     def __init__(self, rawData, readOnly=True):
         self.rawData = rawData
         self.readOnly = readOnly
@@ -51,15 +69,11 @@ class TapeBloc:
         return self.rawData[2:-1]  # FIXME
 
     def isValid(self):
-        sum = 0
-        for byte in self.body:
-            sum = (sum + byte) & 0xFF
-        checksum = 0x100 - sum
-        return checksum == self.checksum
+        return TapeBloc.computeChecksum(self.body) == self.checksum
 
 
 class LeaderTapeBlocDescriptor:
-    def __init__(self, fileName, fileExtension, fileType, fileMode):
+    def __init__(self, fileName: str, fileExtension: str, fileType: int, fileMode: int):
         self.fileName = fileName  # TODO decode + trim, to upper
         self.fileExtension = fileExtension  # TODO decode + trim, to upper
         self.fileType = fileType  # Restrict to 0..255
@@ -68,13 +82,24 @@ class LeaderTapeBlocDescriptor:
     @staticmethod
     def buildFromTapeBloc(rawData):
         return LeaderTapeBlocDescriptor(
-            rawData[2:10], rawData[10:13], rawData[13], rawData[14] * 256 + rawData[15]
+            rawData[2:10].decode("utf-8").trim(),
+            rawData[10:13].decode("utf-8").trim(),
+            rawData[13],
+            rawData[14] * 256 + rawData[15],
         )
 
     def toTapeBloc(self) -> TapeBloc:
         rawData = bytearray(
             17
         )  # bloc type(1), bloc length (1), name (8), extension (3), type (1), mode (2), checksum (1)
+        rawData[0] = 0
+        rawData[1] = 16
+        rawData[2:10] = (self.fileName.upper() + "        ").encode("utf-8")[0:8]
+        rawData[10:13] = (self.fileExtension.upper() + "   ").encode("utf-8")[0:3]
+        rawData[13] = self.fileType & 0xFF
+        rawData[14] = (self.fileMode >> 8) & 0xFF
+        rawData[15] = self.fileMode & 0xFF
+        rawData[16] = TapeBloc.computeChecksum(rawData[2:-1])
         return TapeBloc(rawData)
 
 

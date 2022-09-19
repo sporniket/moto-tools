@@ -100,3 +100,46 @@ def test_leader_tape_bloc_descriptor_can_create_tape_bloc():
             0x34,
         ]
     )
+
+
+def test_tape_bloc_build_from_data():
+    assert TapeBloc.buildFromData(
+        bytes(
+            [
+                0x42,
+                0x41,
+                0x4E,
+                0x4E,
+                0x45,
+                0x52,
+                0x20,
+                0x20,
+                0x42,
+                0x41,
+                0x53,
+                0x00,
+                0x00,
+                0x00,
+            ]
+        )
+    ).rawData == bytes(
+        [
+            0x01,
+            0x10,
+            0x42,
+            0x41,
+            0x4E,
+            0x4E,
+            0x45,
+            0x52,
+            0x20,
+            0x20,
+            0x42,
+            0x41,
+            0x53,
+            0x00,
+            0x00,
+            0x00,
+            0x34,
+        ]
+    )
