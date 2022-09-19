@@ -89,18 +89,13 @@ class LeaderTapeBlocDescriptor:
         )
 
     def toTapeBloc(self) -> TapeBloc:
-        rawData = bytearray(
-            17
-        )  # bloc type(1), bloc length (1), name (8), extension (3), type (1), mode (2), checksum (1)
-        rawData[0] = 0
-        rawData[1] = 16
-        rawData[2:10] = (self.fileName.upper() + "        ").encode("utf-8")[0:8]
-        rawData[10:13] = (self.fileExtension.upper() + "   ").encode("utf-8")[0:3]
-        rawData[13] = self.fileType & 0xFF
-        rawData[14] = (self.fileMode >> 8) & 0xFF
-        rawData[15] = self.fileMode & 0xFF
-        rawData[16] = TapeBloc.computeChecksum(rawData[2:-1])
-        return TapeBloc(rawData)
+        data = bytearray(14)  # name (8), extension (3), type (1), mode (2)
+        data[0:8] = (self.fileName.upper() + "        ").encode("utf-8")[0:8]
+        data[8:11] = (self.fileExtension.upper() + "   ").encode("utf-8")[0:3]
+        data[11] = self.fileType & 0xFF
+        data[12] = (self.fileMode >> 8) & 0xFF
+        data[13] = self.fileMode & 0xFF
+        return TapeBloc.buildFromData(data, TypeOfTapeBloc.LEADER)
 
 
 class Tape:
