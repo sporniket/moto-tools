@@ -29,7 +29,7 @@ class Basic1PrettyPrinter:
 
         return self
 
-    def processLine(self, line: str) -> str:
+    def makePretty(self, line: str) -> str:
         self.inputLine = line
         self.resultLine = line
         for processor in [self.processCase, self.processNumbering]:
