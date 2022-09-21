@@ -25,6 +25,8 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter, FileType
 from typing import List, Union, Optional
 from enum import Enum
 
+from moto_lib import *
+
 
 class TapeArchiveCli:
     def createArgParser() -> ArgumentParser:
@@ -129,52 +131,32 @@ If not, see <https://www.gnu.org/licenses/>. 
             print("NOT YET IMPLEMENTED : Creating...")
         elif args.list:
             print("Listing...")
-            startOfBlockSequence = bytes(
-                [
-                    0x01,
-                    0x01,
-                    0x01,
-                    0x01,
-                    0x01,
-                    0x01,
-                    0x01,
-                    0x01,
-                    0x01,
-                    0x01,
-                    0x3C,
-                    0x5A,
-                ]
-            )
             with open(args.archive, "rb") as tar:
-                tarContent = tar.read()
-                startFrom = 0
-                blockCount = 0
-                while startFrom < len(tarContent):
-                    next = tarContent.find(startOfBlockSequence, startFrom)
-                    if next == -1:
-                        startFrom = len(tarContent)
-                    else:
-                        startFrom = next + len(startOfBlockSequence)
-                        if (
-                            tarContent[startFrom] == 0
-                            and tarContent[startFrom + 1] == 16
-                        ):
-                            fileName = tarContent[
-                                startFrom + 2 : startFrom + 10
-                            ].decode("utf-8")
-                            fileExtension = tarContent[
-                                startFrom + 10 : startFrom + 13
-                            ].decode("utf-8")
-                            fileType = tarContent[startFrom + 13]
-                            fileMode = (
-                                tarContent[startFrom + 14] * 256
-                                + tarContent[startFrom + 15]
-                            )
-                            checksum = tarContent[startFrom + 16]
-                            print(
-                                f"{fileName}.{fileExtension} Type {fileType} Mode {fileMode} Checksum {checksum} at block #{blockCount}"
-                            )
-                        blockCount = blockCount + 1
+                tape = Tape(tar.read())
+            blockCount = 0
+            block = tape.nextBlock()
+            fileSize = 0
+            fileBlocks = 0
+            while block is not None:
+                blockCount += 1
+                if block.type == TypeOfTapeBlock.LEADER:
+                    fileSize = 0
+                    fileBlocks = 0
+                    desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
+                    output = (
+                        f"{desc.fileName}.{desc.fileExtension} Type {desc.fileType} Mode {desc.fileMode} Checksum {block.checksum} at block #{blockCount}"
+                        if args.verbose
+                        else f"{desc.fileName}.{desc.fileExtension}"
+                    )
+                    print(output)
+                elif block.type == TypeOfTapeBlock.EOF:
+                    if args.verbose:
+                        print(f"    {fileSize} octets over {fileBlocks} blocks.")
+                else:
+                    fileBlocks += 1
+                    fileSize += len(block.body)
+                    print(f"    {fileSize} octets over {fileBlocks} blocks.")
+                block = tape.nextBlock()
 
         elif args.extract:
             print("NOT YET IMPLEMENTED : Extracting...")

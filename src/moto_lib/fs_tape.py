@@ -23,28 +23,28 @@ If not, see <https://www.gnu.org/licenses/>. 
 from enum import Enum, IntEnum
 
 
-class TypeOfTapeBloc(IntEnum):
-    LEADER = 0
-    DATA = 1
-    EOF = 2
+class TypeOfTapeBlock(IntEnum):
+    LEADER = 0x00
+    DATA = 0x01
+    EOF = 0xFF
 
 
-class TapeBloc:
+class TapeBlock:
     @staticmethod
     def computeChecksum(data):
         sum = 0
         for byte in data:
             sum = (sum + byte) & 0xFF
-        checksum = 0x100 - sum
+        checksum = (0x100 - sum) & 0xFF
         return checksum
 
     @staticmethod
-    def buildFromData(data, type: TypeOfTapeBloc = TypeOfTapeBloc.DATA):
-        return TapeBloc(
+    def buildFromData(data, type: TypeOfTapeBlock = TypeOfTapeBlock.DATA):
+        return TapeBlock(
             bytes(
                 bytes([type.value, len(data) + 2])
                 + data
-                + bytes([TapeBloc.computeChecksum(data)])
+                + bytes([TapeBlock.computeChecksum(data)])
             )
         )
 
@@ -54,11 +54,11 @@ class TapeBloc:
 
     @property
     def type(self):
-        return TypeOfTapeBloc(self.rawData[0])
+        return TypeOfTapeBlock(self.rawData[0])
 
     @property
     def length(self):
-        return self.rawData[1]
+        return 256 if self.rawData[1] == 0 else self.rawData[1]
 
     @property
     def checksum(self):
@@ -68,11 +68,17 @@ class TapeBloc:
     def body(self):
         return self.rawData[2:-1]  # FIXME
 
+    def isValidChecksum(self):
+        return TapeBlock.computeChecksum(self.body) == self.checksum
+
+    def isValidLength(self):
+        return False if self.length == 1 else self.length == len(self.rawData) - 1
+
     def isValid(self):
-        return TapeBloc.computeChecksum(self.body) == self.checksum
+        return self.isValidLength() and self.isValidChecksum()
 
 
-class LeaderTapeBlocDescriptor:
+class LeaderTapeBlockDescriptor:
     def __init__(self, fileName: str, fileExtension: str, fileType: int, fileMode: int):
         self.fileName = fileName  # TODO decode + trim, to upper
         self.fileExtension = fileExtension  # TODO decode + trim, to upper
@@ -80,31 +86,49 @@ class LeaderTapeBlocDescriptor:
         self.fileMode = fileMode  # Restrict to 0..65535
 
     @staticmethod
-    def buildFromTapeBloc(rawData):
-        return LeaderTapeBlocDescriptor(
-            rawData[2:10].decode("utf-8").trim(),
-            rawData[10:13].decode("utf-8").trim(),
+    def buildFromTapeBlock(rawData):
+        return LeaderTapeBlockDescriptor(
+            rawData[2:10].decode("utf-8").strip(),
+            rawData[10:13].decode("utf-8").strip(),
             rawData[13],
             rawData[14] * 256 + rawData[15],
         )
 
-    def toTapeBloc(self) -> TapeBloc:
+    def toTapeBlock(self) -> TapeBlock:
         data = bytearray(14)  # name (8), extension (3), type (1), mode (2)
         data[0:8] = (self.fileName.upper() + "        ").encode("utf-8")[0:8]
         data[8:11] = (self.fileExtension.upper() + "   ").encode("utf-8")[0:3]
         data[11] = self.fileType & 0xFF
         data[12] = (self.fileMode >> 8) & 0xFF
         data[13] = self.fileMode & 0xFF
-        return TapeBloc.buildFromData(data, TypeOfTapeBloc.LEADER)
+        return TapeBlock.buildFromData(data, TypeOfTapeBlock.LEADER)
+
+
+startOfBlockSequence = b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x3c\x5a"
 
 
 class Tape:
+    def __init__(self, rawData):
+        self.rawData = rawData
+        self._position = 0
+        self.maxPosition = len(self.rawData)
+
     @property
     def position(self):
-        return self.position
+        return self._position
 
-    def rewind(self):
-        self.position = 0
-
-    def nextBloc(self) -> TapeBloc:
-        pass
+    def nextBlock(self) -> TapeBlock:
+        pos = self.rawData.find(startOfBlockSequence, self.position)
+        if pos == -1:
+            self._position = self.maxPosition
+            return None
+        else:
+            self._position = pos + len(startOfBlockSequence)
+            if self._position + 2 <= self.maxPosition:
+                blocRawData = self.rawData[
+                    self._position : self._position
+                    + self.rawData[self._position + 1]
+                    + 1
+                ]
+                self._position += len(blocRawData)
+                return TapeBlock(blocRawData)
