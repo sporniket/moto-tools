@@ -143,19 +143,16 @@ If not, see <https://www.gnu.org/licenses/>. 
                     fileSize = 0
                     fileBlocks = 0
                     desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
+                elif block.type == TypeOfTapeBlock.EOF:
                     output = (
-                        f"{desc.fileName}.{desc.fileExtension} Type {desc.fileType} Mode {desc.fileMode} Checksum {block.checksum} at block #{blockCount}"
+                        f"{desc.fileName}.{desc.fileExtension}\t{desc.fileType}\t{desc.fileMode}\t{block.checksum}\t#{blockCount}\t{fileSize} octets\t{fileBlocks} blocks."
                         if args.verbose
                         else f"{desc.fileName}.{desc.fileExtension}"
                     )
                     print(output)
-                elif block.type == TypeOfTapeBlock.EOF:
-                    if args.verbose:
-                        print(f"    {fileSize} octets over {fileBlocks} blocks.")
                 else:
                     fileBlocks += 1
                     fileSize += len(block.body)
-                    print(f"    {fileSize} octets over {fileBlocks} blocks.")
                 block = tape.nextBlock()
 
         elif args.extract:

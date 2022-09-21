@@ -125,10 +125,10 @@ class Tape:
         else:
             self._position = pos + len(startOfBlockSequence)
             if self._position + 2 <= self.maxPosition:
-                blocRawData = self.rawData[
-                    self._position : self._position
-                    + self.rawData[self._position + 1]
-                    + 1
-                ]
-                self._position += len(blocRawData)
+                length = self.rawData[self._position + 1]
+                blockEnd = (
+                    self._position + length + 1 if length > 0 else self._position + 257
+                )
+                blocRawData = self.rawData[self._position : blockEnd]
+                self._position = blockEnd
                 return TapeBlock(blocRawData)
