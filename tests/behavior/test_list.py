@@ -35,8 +35,6 @@ from .utils import (
     assert_that_source_is_converted_as_expected,
 )
 
-from electronic_symbol_generator_for_cad import SymbolGeneratorCli
-
 input_archive = "sporny-basic.k7"
 
 

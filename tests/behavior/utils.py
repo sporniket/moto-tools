@@ -24,7 +24,6 @@ import sys
 import filecmp
 from typing import List
 from unittest.mock import patch
-from electronic_symbol_generator_for_cad import SymbolGeneratorCli
 
 
 def makeTmpDirOrDie(suffix: str = None) -> str:
