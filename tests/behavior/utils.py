@@ -18,7 +18,24 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
-from .__main__ import main
-from .tar import *
 
-__all__ = ["main", "TapeArchiveCli"]
+import os
+import sys
+import filecmp
+from typing import List
+from unittest.mock import patch
+from electronic_symbol_generator_for_cad import SymbolGeneratorCli
+
+
+def makeTmpDirOrDie(suffix: str = None) -> str:
+    newdir = os.path.join(".", f"tmp.{suffix}" if suffix != None else "tmp")
+    if os.path.exists(newdir):
+        if os.path.isdir(newdir):
+            return newdir
+        raise (ResourceWarning(f"{newdir} is not a directory"))
+    os.mkdir(newdir)
+    return newdir
+
+
+def assert_that_source_is_converted_as_expected(pathActual: str, pathExpected: str):
+    assert filecmp.cmp(pathActual, pathExpected, shallow=False)
