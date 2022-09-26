@@ -129,7 +129,7 @@ If not, see <https://www.gnu.org/licenses/>. 
 
         if args.create:
             print("NOT YET IMPLEMENTED : Creating...")
-        elif args.list:
+        elif args.list or args.extract:
             print("Listing...")
             with open(args.archive, "rb") as tar:
                 tape = Tape(tar.read())
@@ -143,6 +143,8 @@ If not, see <https://www.gnu.org/licenses/>. 
                     fileSize = 0
                     fileBlocks = 0
                     desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
+                    if args.extract:
+                        print("TODO - initialize byte accumulator")
                 elif block.type == TypeOfTapeBlock.EOF:
                     output = (
                         f"{desc.fileName}.{desc.fileExtension}\t{desc.fileType}\t{desc.fileMode}\t{block.checksum}\t#{blockCount}\t{fileSize} octets\t{fileBlocks} blocks."
@@ -150,12 +152,13 @@ If not, see <https://www.gnu.org/licenses/>. 
                         else f"{desc.fileName}.{desc.fileExtension}"
                     )
                     print(output)
+                    if args.extract:
+                        print("TODO - write file")
                 else:
                     fileBlocks += 1
                     fileSize += len(block.body)
+                    if args.extract:
+                        print("TODO - append bytes to accumulator")
                 block = tape.nextBlock()
-
-        elif args.extract:
-            print("NOT YET IMPLEMENTED : Extracting...")
 
         print("Done")
