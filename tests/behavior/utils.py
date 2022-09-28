@@ -19,9 +19,12 @@ If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
 
-import os
-import sys
 import filecmp
+import os
+import shutil
+import sys
+import time
+
 from typing import List
 from unittest.mock import patch
 
@@ -34,6 +37,13 @@ def makeTmpDirOrDie(suffix: str = None) -> str:
         raise (ResourceWarning(f"{newdir} is not a directory"))
     os.mkdir(newdir)
     return newdir
+
+
+def initializeTmpWorkspace(files: List[str]) -> str:
+    tmp_dir = makeTmpDirOrDie(time.time())
+    for file in files:
+        shutil.copy(file, tmp_dir)
+    return tmp_dir
 
 
 def assert_that_source_is_converted_as_expected(pathActual: str, pathExpected: str):

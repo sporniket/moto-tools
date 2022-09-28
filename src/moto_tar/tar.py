@@ -133,6 +133,7 @@ If not, see <https://www.gnu.org/licenses/>. 
             print("Listing...")
             with open(args.archive, "rb") as tar:
                 tape = Tape(tar.read())
+            targetDir = os.path.dirname(args.archive)
             blockCount = 0
             block = tape.nextBlock()
             fileSize = 0
@@ -144,21 +145,30 @@ If not, see <https://www.gnu.org/licenses/>. 
                     fileBlocks = 0
                     desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
                     if args.extract:
-                        print("TODO - initialize byte accumulator")
+                        fileContent = bytearray()  # initialize accumulator
                 elif block.type == TypeOfTapeBlock.EOF:
                     output = (
                         f"{desc.fileName}.{desc.fileExtension}\t{desc.fileType}\t{desc.fileMode}\t{block.checksum}\t#{blockCount}\t{fileSize} octets\t{fileBlocks} blocks."
                         if args.verbose
                         else f"{desc.fileName}.{desc.fileExtension}"
                     )
-                    print(output)
                     if args.extract:
-                        print("TODO - write file")
+                        with open(
+                            os.path.join(
+                                targetDir, f"{desc.fileName}.{desc.fileExtension}"
+                            ),
+                            "wb",
+                        ) as f:
+                            f.write(fileContent)
+                        if args.verbose:
+                            print(output)
+                    else:
+                        print(output)
                 else:
                     fileBlocks += 1
                     fileSize += len(block.body)
                     if args.extract:
-                        print("TODO - append bytes to accumulator")
+                        fileContent += block.body  # update accumulator
                 block = tape.nextBlock()
 
         print("Done")

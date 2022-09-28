@@ -33,6 +33,7 @@ from moto_tar import TapeArchiveCli
 from .utils import (
     makeTmpDirOrDie,
     assert_that_source_is_converted_as_expected,
+    initializeTmpWorkspace,
 )
 
 input_archive = "sporny-basic.k7"
@@ -40,35 +41,46 @@ input_archive = "sporny-basic.k7"
 
 def test_that_extract_command_does_extract_files():
     source_dir = os.path.join(".", "tests", "data")
-    baseArgs = ["prog", "-x", os.path.join(source_dir, input_archive)]
+    tmp_dir = initializeTmpWorkspace([os.path.join(source_dir, input_archive)])
+    baseArgs = ["prog", "-x", os.path.join(tmp_dir, input_archive)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
             TapeArchiveCli().run()
-        assert (
-            out.getvalue()
-            == """Archive : ./tests/data/sporny-basic.k7
-Given source files : 0
-Listing...
-BANNER.BAS
-BANNER2.BAS
-C5000.BAS
-C5001.BAS
-C5001LST.BAS
-C5002.BAS
-Done
-"""
-        )
+        for file in [
+            "BANNER.BAS",
+            "BANNER2.BAS",
+            "C5000.BAS",
+            "C5001.BAS",
+            "C5001LST.BAS",
+            "C5002.BAS",
+        ]:
+            assert os.path.exists(os.path.join(tmp_dir, file)) and os.path.isfile(
+                os.path.join(tmp_dir, file)
+            )
+    shutil.rmtree(tmp_dir)
 
 
 def test_that_verbose_list_command_does_list_files_with_details():
     source_dir = os.path.join(".", "tests", "data")
-    baseArgs = ["prog", "-xv", os.path.join(source_dir, input_archive)]
+    tmp_dir = initializeTmpWorkspace([os.path.join(source_dir, input_archive)])
+    baseArgs = ["prog", "-xv", os.path.join(tmp_dir, input_archive)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
             TapeArchiveCli().run()
+        for file in [
+            "BANNER.BAS",
+            "BANNER2.BAS",
+            "C5000.BAS",
+            "C5001.BAS",
+            "C5001LST.BAS",
+            "C5002.BAS",
+        ]:
+            assert os.path.exists(os.path.join(tmp_dir, file)) and os.path.isfile(
+                os.path.join(tmp_dir, file)
+            )
         assert (
             out.getvalue()
-            == """Archive : ./tests/data/sporny-basic.k7
+            == f"""Archive : {os.path.join(tmp_dir, input_archive)}
 Verbose mode
 Given source files : 0
 Listing...
@@ -81,3 +93,4 @@ C5002.BAS\t0\t0\t0\t#30\t836 octets\t4 blocks.
 Done
 """
         )
+    shutil.rmtree(tmp_dir)
