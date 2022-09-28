@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
+import filecmp
 import os
 import shutil
 import time
@@ -46,7 +47,7 @@ def test_that_extract_command_does_extract_files():
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
             TapeArchiveCli().run()
-        for file in [
+        for f in [
             "BANNER.BAS",
             "BANNER2.BAS",
             "C5000.BAS",
@@ -54,9 +55,9 @@ def test_that_extract_command_does_extract_files():
             "C5001LST.BAS",
             "C5002.BAS",
         ]:
-            assert os.path.exists(os.path.join(tmp_dir, file)) and os.path.isfile(
-                os.path.join(tmp_dir, file)
-            )
+            pathActual = os.path.join(tmp_dir, f)
+            assert os.path.exists(pathActual) and os.path.isfile(pathActual)
+            assert filecmp.cmp(pathActual, os.path.join(source_dir, f), shallow=False)
     shutil.rmtree(tmp_dir)
 
 
@@ -67,7 +68,7 @@ def test_that_verbose_list_command_does_list_files_with_details():
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
             TapeArchiveCli().run()
-        for file in [
+        for f in [
             "BANNER.BAS",
             "BANNER2.BAS",
             "C5000.BAS",
@@ -75,9 +76,9 @@ def test_that_verbose_list_command_does_list_files_with_details():
             "C5001LST.BAS",
             "C5002.BAS",
         ]:
-            assert os.path.exists(os.path.join(tmp_dir, file)) and os.path.isfile(
-                os.path.join(tmp_dir, file)
-            )
+            pathActual = os.path.join(tmp_dir, f)
+            assert os.path.exists(pathActual) and os.path.isfile(pathActual)
+            assert filecmp.cmp(pathActual, os.path.join(source_dir, f), shallow=False)
         assert (
             out.getvalue()
             == f"""Archive : {os.path.join(tmp_dir, input_archive)}
