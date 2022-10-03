@@ -128,7 +128,14 @@ If not, see <https://www.gnu.org/licenses/>. 
                 print(f"Processing {s}...")
 
         if args.create:
-            print("NOT YET IMPLEMENTED : Creating...")
+            print("Creating...")
+            tape = Tape()
+            for src in sources:
+                leadBloc = LeaderTapeBlockDescriptor(fileName, fileExtension, fileType, fileMode)
+                with open(src,"rb") as f:
+                    fbytes = f.read()
+                tape.
+
         elif args.list or args.extract:
             print("Listing...")
             with open(args.archive, "rb") as tar:

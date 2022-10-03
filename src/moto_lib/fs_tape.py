@@ -104,12 +104,13 @@ class LeaderTapeBlockDescriptor:
         return TapeBlock.buildFromData(data, TypeOfTapeBlock.LEADER)
 
 
-startOfBlockSequence = b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x3c\x5a"
+startOfBlockSequenceToRead = b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x3c\x5a"
+startOfBlockSequenceToWrite = b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x3c\x5a"
 
 
 class Tape:
-    def __init__(self, rawData):
-        self.rawData = rawData
+    def __init__(self, rawData = None):
+        self.rawData = rawData if rawData is not None else bytearray(21*1024)
         self._position = 0
         self.maxPosition = len(self.rawData)
 
@@ -118,12 +119,12 @@ class Tape:
         return self._position
 
     def nextBlock(self) -> TapeBlock:
-        pos = self.rawData.find(startOfBlockSequence, self.position)
+        pos = self.rawData.find(startOfBlockSequenceToRead, self.position)
         if pos == -1:
             self._position = self.maxPosition
             return None
         else:
-            self._position = pos + len(startOfBlockSequence)
+            self._position = pos + len(startOfBlockSequenceToRead)
             if self._position + 2 <= self.maxPosition:
                 length = self.rawData[self._position + 1]
                 blockEnd = (
@@ -132,3 +133,12 @@ class Tape:
                 blocRawData = self.rawData[self._position : blockEnd]
                 self._position = blockEnd
                 return TapeBlock(blocRawData)
+
+    def writeBlock(self, block:TapeBlock):
+        position = self._position
+        nextPosition = position+len(startOfBlockSequenceToWrite)
+        self.rawData[position:nextPosition] = startOfBlockSequenceToWrite
+        position = nextPosition
+        nextPosition = position + len(block.rawData)
+        self.rawData[position:nextPosition] = block.rawData
+        self._position = nextPosition
