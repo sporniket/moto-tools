@@ -131,10 +131,36 @@ If not, see <https://www.gnu.org/licenses/>. 
             print("Creating...")
             tape = Tape()
             for src in sources:
-                leadBloc = LeaderTapeBlockDescriptor(fileName, fileExtension, fileType, fileMode)
-                with open(src,"rb") as f:
+                dotPos = src.rfind(".")
+                fileType = 2  # TODO check that CSAVEM create filetype 2 / binary
+                fileMode = 0
+                if dotPos > -1:
+                    fileName = os.path.basename(src[0:dotPos].upper())
+                    if len(fileName) > 8:
+                        fileName = fileName[0:8]
+                    fileExtension = src[dotPos + 1 :].upper()
+                    if fileExtension == "BAS,A":
+                        fileExtension = "BAS"
+                        fileType = 0  # basic
+                        fileMode = 0xFFFF  # -1, ascii listing
+                        src = src[:-2]
+                    elif fileExtension == "BAS":
+                        fileType = 0  # basic
+                    elif fileType == "LST":
+                        # TODO converts on the fly into ASCII BAS ?
+                        pass
+                    elif fileExtension == "CSV":
+                        # TODO check the actual format (separator 0xD ? )
+                        fileType = 1  # TODO check that file created by basic file commands have type 1 / data
+                leadBloc = LeaderTapeBlockDescriptor(
+                    fileName, fileExtension, fileType, fileMode
+                )
+                tape.writeBlock(leadBloc.toTapeBlock())
+                with open(src, "rb") as f:
                     fbytes = f.read()
-                tape.
+                tape.write(fbytes)
+            with open(args.archive, "wb") as tar:
+                tar.write(tape.rawData)
 
         elif args.list or args.extract:
             print("Listing...")

@@ -40,9 +40,11 @@ class TapeBlock:
 
     @staticmethod
     def buildFromData(data, type: TypeOfTapeBlock = TypeOfTapeBlock.DATA):
+        if data is None:
+            return TapeBlock(bytes([type.value, 2, 0]))
         return TapeBlock(
             bytes(
-                bytes([type.value, len(data) + 2])
+                bytes([type.value, (len(data) + 2) & 0xFF])
                 + data
                 + bytes([TapeBlock.computeChecksum(data)])
             )
@@ -105,12 +107,14 @@ class LeaderTapeBlockDescriptor:
 
 
 startOfBlockSequenceToRead = b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x3c\x5a"
-startOfBlockSequenceToWrite = b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x3c\x5a"
+startOfBlockSequenceToWrite = (
+    b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x3c\x5a"
+)
 
 
 class Tape:
-    def __init__(self, rawData = None):
-        self.rawData = rawData if rawData is not None else bytearray(21*1024)
+    def __init__(self, rawData=None):
+        self.rawData = rawData if rawData is not None else bytearray(21 * 1024)
         self._position = 0
         self.maxPosition = len(self.rawData)
 
@@ -134,11 +138,24 @@ class Tape:
                 self._position = blockEnd
                 return TapeBlock(blocRawData)
 
-    def writeBlock(self, block:TapeBlock):
+    def writeBlock(self, block: TapeBlock):
         position = self._position
-        nextPosition = position+len(startOfBlockSequenceToWrite)
+        nextPosition = position + len(startOfBlockSequenceToWrite)
         self.rawData[position:nextPosition] = startOfBlockSequenceToWrite
         position = nextPosition
         nextPosition = position + len(block.rawData)
         self.rawData[position:nextPosition] = block.rawData
         self._position = nextPosition
+
+    def write(self, data):
+        dataPos = 0
+        dataMax = len(data)
+        dataRemaining = dataMax
+        while dataPos < dataMax:
+            dataNextPos = (
+                dataPos + dataRemaining if dataRemaining < 254 else dataPos + 254
+            )
+            self.writeBlock(TapeBlock.buildFromData(data[dataPos:dataNextPos]))
+            dataPos = dataNextPos
+            dataRemaining = dataMax - dataPos
+        self.writeBlock(TapeBlock.buildFromData(None, TypeOfTapeBlock.EOF))

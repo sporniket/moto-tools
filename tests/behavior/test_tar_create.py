@@ -44,7 +44,7 @@ source_files = [
     "BANNER2.BAS",
     "C5000.BAS",
     "C5001.BAS",
-    "C5001LST.BAS",
+    "C5001LST.BAS,a",
     "C5002.BAS",
 ]
 
@@ -65,5 +65,7 @@ def test_that_create_command_does_create_tape_archive():
             TapeArchiveCli().run()
         pathActual = os.path.join(tmp_dir, output_archive)
         assert os.path.exists(pathActual) and os.path.isfile(pathActual)
-        assert filecmp.cmp(pathActual, os.path.join(source_dir, f), shallow=False)
+        assert filecmp.cmp(
+            pathActual, os.path.join(source_dir, reference_archive), shallow=False
+        )
     shutil.rmtree(tmp_dir)
