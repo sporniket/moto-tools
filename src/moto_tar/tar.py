@@ -206,27 +206,15 @@ If not, see <https://www.gnu.org/licenses/>. 
             with open(args.archive, "rb") as tar:
                 tape = Tape(tar.read())
             targetDir = os.path.dirname(args.archive)
-            blockCount = 0
             block = tape.nextBlock()
-            fileSize = 0
-            fileBlocks = 0
             while block is not None:
-                blockCount += 1
                 if block.type == TypeOfTapeBlock.LEADER:
-                    fileSize = 0
-                    fileBlocks = 0
-                    desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
                     listener.onBeginFileBlock(
                         LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
                     )
                     if args.extract:
                         fileContent = bytearray()  # initialize accumulator
                 elif block.type == TypeOfTapeBlock.EOF:
-                    output = (
-                        f"{desc.fileName}.{desc.fileExtension}\t{desc.fileType}\t{desc.fileMode}\t{block.checksum}\t#{blockCount}\t{fileSize} octets\t{fileBlocks} blocks."
-                        if args.verbose
-                        else f"{desc.fileName}.{desc.fileExtension}"
-                    )
                     if args.extract:
                         with open(
                             os.path.join(
@@ -235,15 +223,9 @@ If not, see <https://www.gnu.org/licenses/>. 
                             "wb",
                         ) as f:
                             f.write(fileContent)
-                        if args.verbose:
-                            pass  # print(output)
-                    else:
-                        pass  # print(output)
                     listener.onEndBlock()
                 else:
                     listener.onDataBlock(block)
-                    fileBlocks += 1
-                    fileSize += len(block.body)
                     if args.extract:
                         fileContent += block.body  # update accumulator
                 block = tape.nextBlock()
