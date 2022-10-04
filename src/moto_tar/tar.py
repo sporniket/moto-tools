@@ -57,8 +57,18 @@ class TapeArchiveCliListener:
         if self.verbose:
             # verbose mode
             desc = self.currentFile
+            fileType = (
+                "BASIC"
+                if desc.fileType == 0
+                else "DATA"
+                if desc.fileType == 1
+                else "BINARY"
+            )
+            fileMode = desc.fileMode
+            if desc.fileType == 0:
+                fileMode = "ASCII" if fileMode == 0xFFFF else "TOKEN"
             print(
-                f"{desc.fileName}.{desc.fileExtension}\t{desc.fileType}\t{desc.fileMode}\t#{self.firstBlock}\t{self.fileSize} octets\t{self.blockCount} blocks."
+                f"{desc.fileName}.{desc.fileExtension}\t{fileType}\t{fileMode}\t#{self.firstBlock}\t{self.fileSize} octets\t{self.blockCount} blocks."
             )
         elif len(self.operation) == 0:
             # non verbose list

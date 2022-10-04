@@ -91,12 +91,12 @@ def test_that_verbose_mode_does_list_files_with_details():
         )
         assert (
             out.getvalue()
-            == """BANNER.BAS\t0\t0\t#1\t102 octets\t1 blocks.
-BANNER2.BAS\t0\t0\t#4\t102 octets\t1 blocks.
-C5000.BAS\t0\t0\t#7\t794 octets\t4 blocks.
-C5001.BAS\t0\t0\t#13\t804 octets\t4 blocks.
-C5001LST.BAS\t0\t65535\t#19\t942 octets\t4 blocks.
-C5002.BAS\t0\t0\t#25\t836 octets\t4 blocks.
+            == """BANNER.BAS\tBASIC\tTOKEN\t#1\t102 octets\t1 blocks.
+BANNER2.BAS\tBASIC\tTOKEN\t#4\t102 octets\t1 blocks.
+C5000.BAS\tBASIC\tTOKEN\t#7\t794 octets\t4 blocks.
+C5001.BAS\tBASIC\tTOKEN\t#13\t804 octets\t4 blocks.
+C5001LST.BAS\tBASIC\tASCII\t#19\t942 octets\t4 blocks.
+C5002.BAS\tBASIC\tTOKEN\t#25\t836 octets\t4 blocks.
 """
         )
     shutil.rmtree(tmp_dir)
