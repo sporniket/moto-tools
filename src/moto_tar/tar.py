@@ -28,6 +28,53 @@ from enum import Enum
 from moto_lib import *
 
 
+class TapeArchiveCliListener:
+    def __init__(self, operation: str, verbose: bool = False):
+        """Initialize the listener.
+
+        Args:
+            operation (str): "Adding", "Extracting" or ""
+            verbose (bool, optional): Enable verbose mode or not. Defaults to disabled.
+        """
+        self.operation = operation
+        self.verbose = verbose
+        self.blockIndex = 0
+
+    def onBeginFileBlock(self, descriptor: LeaderTapeBlockDescriptor):
+        self.blockIndex += 1
+        self.currentFile = descriptor
+        self.blockCount = 0
+        self.fileSize = 0
+        self.firstBlock = self.blockIndex
+
+    def onDataBlock(self, block: TapeBlock):
+        self.blockIndex += 1
+        self.blockCount += 1
+        self.fileSize += len(block.body)
+
+    def onEndBlock(self):
+        self.blockIndex += 1
+        if self.verbose:
+            # verbose mode
+            desc = self.currentFile
+            print(
+                f"{desc.fileName}.{desc.fileExtension}\t{desc.fileType}\t{desc.fileMode}\t#{self.firstBlock}\t{self.fileSize} octets\t{self.blockCount} blocks."
+            )
+        elif len(self.operation) == 0:
+            # non verbose list
+            desc = self.currentFile
+            print(f"{desc.fileName}.{desc.fileExtension}")
+        self.currentFile = None
+
+    def onError(self, message: str):
+        desc = self.currentFile
+        print(
+            f"Error : {message}"
+            if desc is None
+            else f"Error on {desc.fileName}.{desc.fileExtension} : {message}"
+        )
+
+
 class TapeArchiveCli:
     def createArgParser() -> ArgumentParser:
         parser = ArgumentParser(
@@ -111,6 +158,10 @@ If not, see <https://www.gnu.org/licenses/>. 
     def run(self) -> int:
         args = TapeArchiveCli.createArgParser().parse_args()
         sources = args.sources
+        listener = TapeArchiveCliListener(
+            "adding" if args.create else "extracting" if args.extract else "",
+            args.verbose,
+        )
         if args.create:
             tape = Tape()
             for src in sources:
@@ -165,6 +216,9 @@ If not, see <https://www.gnu.org/licenses/>. 
                     fileSize = 0
                     fileBlocks = 0
                     desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
+                    listener.onBeginFileBlock(
+                        LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
+                    )
                     if args.extract:
                         fileContent = bytearray()  # initialize accumulator
                 elif block.type == TypeOfTapeBlock.EOF:
@@ -182,10 +236,12 @@ If not, see <https://www.gnu.org/licenses/>. 
                         ) as f:
                             f.write(fileContent)
                         if args.verbose:
-                            print(output)
+                            pass  # print(output)
                     else:
-                        print(output)
+                        pass  # print(output)
+                    listener.onEndBlock()
                 else:
+                    listener.onDataBlock(block)
                     fileBlocks += 1
                     fileSize += len(block.body)
                     if args.extract:

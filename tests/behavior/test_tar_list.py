@@ -66,11 +66,11 @@ def test_that_verbose_list_command_does_list_files_with_details():
         assert returnCode == 0
         assert (
             out.getvalue()
-            == """BANNER.BAS\t0\t0\t0\t#3\t102 octets\t1 blocks.
-BANNER2.BAS\t0\t0\t0\t#6\t102 octets\t1 blocks.
-C5000.BAS\t0\t0\t0\t#12\t794 octets\t4 blocks.
-C5001.BAS\t0\t0\t0\t#18\t804 octets\t4 blocks.
-C5001LST.BAS\t0\t65535\t0\t#24\t942 octets\t4 blocks.
-C5002.BAS\t0\t0\t0\t#30\t836 octets\t4 blocks.
+            == """BANNER.BAS\t0\t0\t#1\t102 octets\t1 blocks.
+BANNER2.BAS\t0\t0\t#4\t102 octets\t1 blocks.
+C5000.BAS\t0\t0\t#7\t794 octets\t4 blocks.
+C5001.BAS\t0\t0\t#13\t804 octets\t4 blocks.
+C5001LST.BAS\t0\t65535\t#19\t942 octets\t4 blocks.
+C5002.BAS\t0\t0\t#25\t836 octets\t4 blocks.
 """
         )
