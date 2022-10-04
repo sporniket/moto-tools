@@ -137,7 +137,7 @@ If not, see <https://www.gnu.org/licenses/>. 
             help=f"Assemble the designated files into the designated tape archive.",
         )
         commandGroup.add_argument(
-            "-l",
+            "-t",
             "--list",
             action="store_true",
             help=f"List all the files contained inside the designated tape archive.",

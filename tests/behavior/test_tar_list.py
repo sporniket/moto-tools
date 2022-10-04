@@ -40,7 +40,7 @@ input_archive = "sporny-basic.k7"
 
 def test_that_it_does_list_files():
     source_dir = os.path.join(".", "tests", "data")
-    baseArgs = ["prog", "-l", os.path.join(source_dir, input_archive)]
+    baseArgs = ["prog", "-t", os.path.join(source_dir, input_archive)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
             returnCode = TapeArchiveCli().run()
@@ -59,7 +59,7 @@ C5002.BAS
 
 def test_that_verbose_mode_does_list_files_with_details():
     source_dir = os.path.join(".", "tests", "data")
-    baseArgs = ["prog", "-lv", os.path.join(source_dir, input_archive)]
+    baseArgs = ["prog", "-tv", os.path.join(source_dir, input_archive)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
             returnCode = TapeArchiveCli().run()
