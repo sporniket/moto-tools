@@ -108,25 +108,15 @@ If not, see <https://www.gnu.org/licenses/>. 
     def __init__(self):
         pass
 
-    def run(self) -> Optional[int]:
+    def run(self) -> int:
         args = TapeArchiveCli.createArgParser().parse_args()
-
-        print(f"Archive : {args.archive}")
-
-        if args.verbose:
-            print("Verbose mode")
-
-        if args.into:
-            print(f"into {args.into}")
-
         sources = args.sources
-        print(f"Given source files : {len(sources)}")
-
         if args.create:
-            print("Creating...")
             tape = Tape()
             for src in sources:
                 dotPos = src.rfind(".")
+                fileName = os.path.basename(src.upper())
+                fileExtension = ""
                 fileType = 2  # TODO check that CSAVEM create filetype 2 / binary
                 fileMode = 0
                 if dotPos > -1:
@@ -162,7 +152,6 @@ If not, see <https://www.gnu.org/licenses/>. 
                 tar.write(tape.rawData)
 
         elif args.list or args.extract:
-            print("Listing...")
             with open(args.archive, "rb") as tar:
                 tape = Tape(tar.read())
             targetDir = os.path.dirname(args.archive)
@@ -202,5 +191,4 @@ If not, see <https://www.gnu.org/licenses/>. 
                     if args.extract:
                         fileContent += block.body  # update accumulator
                 block = tape.nextBlock()
-
-        print("Done")
+        return 0

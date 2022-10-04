@@ -62,7 +62,9 @@ def test_that_create_command_does_create_tape_archive():
     ]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            TapeArchiveCli().run()
+            returnCode = TapeArchiveCli().run()
+        assert returnCode == 0
+        assert out.getvalue() == ""
         pathActual = os.path.join(tmp_dir, output_archive)
         assert os.path.exists(pathActual) and os.path.isfile(pathActual)
         assert filecmp.cmp(
@@ -89,10 +91,7 @@ def test_that_create_command_fails_when_there_is_too_much_data():
         assert returnCode == 1
         assert (
             out.getvalue()
-            == f"""Archive : {os.path.join(tmp_dir, output_archive)}
-Given source files : 1
-Creating...
-Too much data, abort creation.
+            == """Too much data, abort creation.
 """
         )
         pathActual = os.path.join(tmp_dir, output_archive)

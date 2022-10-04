@@ -43,19 +43,16 @@ def test_that_list_command_does_list_files():
     baseArgs = ["prog", "-l", os.path.join(source_dir, input_archive)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            TapeArchiveCli().run()
+            returnCode = TapeArchiveCli().run()
+        assert returnCode == 0
         assert (
             out.getvalue()
-            == """Archive : ./tests/data/sporny-basic.k7
-Given source files : 0
-Listing...
-BANNER.BAS
+            == """BANNER.BAS
 BANNER2.BAS
 C5000.BAS
 C5001.BAS
 C5001LST.BAS
 C5002.BAS
-Done
 """
         )
 
@@ -65,19 +62,15 @@ def test_that_verbose_list_command_does_list_files_with_details():
     baseArgs = ["prog", "-lv", os.path.join(source_dir, input_archive)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            TapeArchiveCli().run()
+            returnCode = TapeArchiveCli().run()
+        assert returnCode == 0
         assert (
             out.getvalue()
-            == """Archive : ./tests/data/sporny-basic.k7
-Verbose mode
-Given source files : 0
-Listing...
-BANNER.BAS\t0\t0\t0\t#3\t102 octets\t1 blocks.
+            == """BANNER.BAS\t0\t0\t0\t#3\t102 octets\t1 blocks.
 BANNER2.BAS\t0\t0\t0\t#6\t102 octets\t1 blocks.
 C5000.BAS\t0\t0\t0\t#12\t794 octets\t4 blocks.
 C5001.BAS\t0\t0\t0\t#18\t804 octets\t4 blocks.
 C5001LST.BAS\t0\t65535\t0\t#24\t942 octets\t4 blocks.
 C5002.BAS\t0\t0\t0\t#30\t836 octets\t4 blocks.
-Done
 """
         )
