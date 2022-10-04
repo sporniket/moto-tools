@@ -141,9 +141,13 @@ class Tape:
     def writeBlock(self, block: TapeBlock):
         position = self._position
         nextPosition = position + len(startOfBlockSequenceToWrite)
+        if nextPosition >= self.maxPosition:
+            raise OverflowError("Reached end of tape.")
         self.rawData[position:nextPosition] = startOfBlockSequenceToWrite
         position = nextPosition
         nextPosition = position + len(block.rawData)
+        if nextPosition >= self.maxPosition:
+            raise OverflowError("Reached end of tape.")
         self.rawData[position:nextPosition] = block.rawData
         self._position = nextPosition
 

@@ -121,11 +121,6 @@ If not, see <https://www.gnu.org/licenses/>. 
 
         sources = args.sources
         print(f"Given source files : {len(sources)}")
-        if (len(sources) == 0) and args.create:
-            print(f"Create blank tape archive...")
-        else:
-            for s in sources:
-                print(f"Processing {s}...")
 
         if args.create:
             print("Creating...")
@@ -155,10 +150,14 @@ If not, see <https://www.gnu.org/licenses/>. 
                 leadBloc = LeaderTapeBlockDescriptor(
                     fileName, fileExtension, fileType, fileMode
                 )
-                tape.writeBlock(leadBloc.toTapeBlock())
-                with open(src, "rb") as f:
-                    fbytes = f.read()
-                tape.write(fbytes)
+                try:
+                    tape.writeBlock(leadBloc.toTapeBlock())
+                    with open(src, "rb") as f:
+                        fbytes = f.read()
+                    tape.write(fbytes)
+                except OverflowError:
+                    print("Too much data, abort creation.")
+                    return 1
             with open(args.archive, "wb") as tar:
                 tar.write(tape.rawData)
 

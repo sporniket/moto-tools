@@ -69,3 +69,32 @@ def test_that_create_command_does_create_tape_archive():
             pathActual, os.path.join(source_dir, reference_archive), shallow=False
         )
     shutil.rmtree(tmp_dir)
+
+
+def test_that_create_command_fails_when_there_is_too_much_data():
+
+    bigSourceFile = "big_18k.txt"
+    tmp_dir = initializeTmpWorkspace(
+        [os.path.join(source_dir, f) for f in [bigSourceFile]]
+    )
+    baseArgs = [
+        "prog",
+        "-c",
+        os.path.join(tmp_dir, output_archive),
+        os.path.join(tmp_dir, bigSourceFile),
+    ]
+    with patch.object(sys, "argv", baseArgs):
+        with redirect_stdout(io.StringIO()) as out:
+            returnCode = TapeArchiveCli().run()
+        assert returnCode == 1
+        assert (
+            out.getvalue()
+            == f"""Archive : {os.path.join(tmp_dir, output_archive)}
+Given source files : 1
+Creating...
+Too much data, abort creation.
+"""
+        )
+        pathActual = os.path.join(tmp_dir, output_archive)
+        assert not os.path.exists(pathActual)
+    shutil.rmtree(tmp_dir)
