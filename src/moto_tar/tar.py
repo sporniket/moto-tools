@@ -168,7 +168,7 @@ If not, see <https://www.gnu.org/licenses/>. 
                 dotPos = src.rfind(".")
                 fileName = os.path.basename(src.upper())
                 fileExtension = ""
-                fileType = 2  # TODO check that CSAVEM create filetype 2 / binary
+                fileType = 2  # binary
                 fileMode = 0
                 if dotPos > -1:
                     fileName = os.path.basename(src[0:dotPos].upper())
