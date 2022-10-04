@@ -150,16 +150,3 @@ class Tape:
             raise OverflowError("Reached end of tape.")
         self.rawData[position:nextPosition] = block.rawData
         self._position = nextPosition
-
-    def write(self, data):
-        dataPos = 0
-        dataMax = len(data)
-        dataRemaining = dataMax
-        while dataPos < dataMax:
-            dataNextPos = (
-                dataPos + dataRemaining if dataRemaining < 254 else dataPos + 254
-            )
-            self.writeBlock(TapeBlock.buildFromData(data[dataPos:dataNextPos]))
-            dataPos = dataNextPos
-            dataRemaining = dataMax - dataPos
-        self.writeBlock(TapeBlock.buildFromData(None, TypeOfTapeBlock.EOF))

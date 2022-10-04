@@ -193,9 +193,25 @@ If not, see <https://www.gnu.org/licenses/>. 
                 )
                 try:
                     tape.writeBlock(leadBloc.toTapeBlock())
+                    listener.onBeginFileBlock(leadBloc)
                     with open(src, "rb") as f:
-                        fbytes = f.read()
-                    tape.write(fbytes)
+                        data = f.read()
+                    dataPos = 0
+                    dataMax = len(data)
+                    dataRemaining = dataMax
+                    while dataPos < dataMax:
+                        dataNextPos = (
+                            dataPos + dataRemaining
+                            if dataRemaining < 254
+                            else dataPos + 254
+                        )
+                        block = TapeBlock.buildFromData(data[dataPos:dataNextPos])
+                        tape.writeBlock(block)
+                        listener.onDataBlock(block)
+                        dataPos = dataNextPos
+                        dataRemaining = dataMax - dataPos
+                    tape.writeBlock(TapeBlock.buildFromData(None, TypeOfTapeBlock.EOF))
+                    listener.onEndBlock()
                 except OverflowError:
                     print("Too much data, abort creation.")
                     return 1
@@ -209,9 +225,8 @@ If not, see <https://www.gnu.org/licenses/>. 
             block = tape.nextBlock()
             while block is not None:
                 if block.type == TypeOfTapeBlock.LEADER:
-                    listener.onBeginFileBlock(
-                        LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
-                    )
+                    desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
+                    listener.onBeginFileBlock(desc)
                     if args.extract:
                         fileContent = bytearray()  # initialize accumulator
                 elif block.type == TypeOfTapeBlock.EOF:

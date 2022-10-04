@@ -73,6 +73,35 @@ def test_that_it_does_create_tape_archive():
     shutil.rmtree(tmp_dir)
 
 
+def test_that_verbose_mode_does_list_files_with_details():
+    tmp_dir = initializeTmpWorkspace(
+        [os.path.join(source_dir, f) for f in source_files]
+    )
+    baseArgs = ["prog", "-cv", os.path.join(tmp_dir, output_archive)] + [
+        os.path.join(tmp_dir, f) for f in source_files
+    ]
+    with patch.object(sys, "argv", baseArgs):
+        with redirect_stdout(io.StringIO()) as out:
+            returnCode = TapeArchiveCli().run()
+        assert returnCode == 0
+        pathActual = os.path.join(tmp_dir, output_archive)
+        assert os.path.exists(pathActual) and os.path.isfile(pathActual)
+        assert filecmp.cmp(
+            pathActual, os.path.join(source_dir, reference_archive), shallow=False
+        )
+        assert (
+            out.getvalue()
+            == """BANNER.BAS\t0\t0\t#1\t102 octets\t1 blocks.
+BANNER2.BAS\t0\t0\t#4\t102 octets\t1 blocks.
+C5000.BAS\t0\t0\t#7\t794 octets\t4 blocks.
+C5001.BAS\t0\t0\t#13\t804 octets\t4 blocks.
+C5001LST.BAS\t0\t65535\t#19\t942 octets\t4 blocks.
+C5002.BAS\t0\t0\t#25\t836 octets\t4 blocks.
+"""
+        )
+    shutil.rmtree(tmp_dir)
+
+
 def test_that_it_fails_when_there_is_too_much_data():
 
     bigSourceFile = "big_18k.txt"
