@@ -40,7 +40,7 @@ from .utils import (
 input_archive = "sporny-basic.k7"
 
 
-def test_that_extract_command_does_extract_files():
+def test_that_it_does_extract_files():
     source_dir = os.path.join(".", "tests", "data")
     tmp_dir = initializeTmpWorkspace([os.path.join(source_dir, input_archive)])
     baseArgs = ["prog", "-x", os.path.join(tmp_dir, input_archive)]
@@ -63,7 +63,7 @@ def test_that_extract_command_does_extract_files():
     shutil.rmtree(tmp_dir)
 
 
-def test_that_verbose_list_command_does_list_files_with_details():
+def test_that_verbose_mode_does_list_files_with_details():
     source_dir = os.path.join(".", "tests", "data")
     tmp_dir = initializeTmpWorkspace([os.path.join(source_dir, input_archive)])
     baseArgs = ["prog", "-xv", os.path.join(tmp_dir, input_archive)]

@@ -53,7 +53,7 @@ output_archive = "mo5.k7"
 reference_archive = "sporny-basic.k7"
 
 
-def test_that_create_command_does_create_tape_archive():
+def test_that_it_does_create_tape_archive():
     tmp_dir = initializeTmpWorkspace(
         [os.path.join(source_dir, f) for f in source_files]
     )
@@ -73,7 +73,7 @@ def test_that_create_command_does_create_tape_archive():
     shutil.rmtree(tmp_dir)
 
 
-def test_that_create_command_fails_when_there_is_too_much_data():
+def test_that_it_fails_when_there_is_too_much_data():
 
     bigSourceFile = "big_18k.txt"
     tmp_dir = initializeTmpWorkspace(

@@ -38,7 +38,7 @@ from .utils import (
 input_archive = "sporny-basic.k7"
 
 
-def test_that_list_command_does_list_files():
+def test_that_it_does_list_files():
     source_dir = os.path.join(".", "tests", "data")
     baseArgs = ["prog", "-l", os.path.join(source_dir, input_archive)]
     with patch.object(sys, "argv", baseArgs):
@@ -57,7 +57,7 @@ C5002.BAS
         )
 
 
-def test_that_verbose_list_command_does_list_files_with_details():
+def test_that_verbose_mode_does_list_files_with_details():
     source_dir = os.path.join(".", "tests", "data")
     baseArgs = ["prog", "-lv", os.path.join(source_dir, input_archive)]
     with patch.object(sys, "argv", baseArgs):
