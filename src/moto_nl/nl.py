@@ -89,22 +89,37 @@ If not, see <https://www.gnu.org/licenses/>. 
 
 
 class NumberLineCli:
+    def processLine(self, line: str):
+        args = self.args
+        line = line.rstrip("\n")
+        match = re.search("^([1-9][0-9]*).*$", line)
+        if match is None:
+            paddedNumber = f"{self.numberLine}"
+            if len(paddedNumber) < args.number_width:
+                paddedNumber += "".join(
+                    [" " for i in range(len(paddedNumber), args.number_width)]
+                )
+            print(f"{paddedNumber} {line}")
+            self.numberLine += args.line_increment
+        else:
+            print(line)
+            self.numberLine = int(match.group(1)) + args.line_increment
+
     def run(self) -> int:
-        args = createArgParser().parse_args()
-        numberLine = args.starting_line_number
-        for line in sys.stdin:
-            line = line.rstrip("\n")
-            match = re.search("^([1-9][0-9]*).*$", line)
-            if match is None:
-                paddedNumber = f"{numberLine}"
-                if len(paddedNumber) < args.number_width:
-                    paddedNumber += "".join(
-                        [" " for i in range(len(paddedNumber), args.number_width)]
-                    )
-                print(f"{paddedNumber} {line}")
-                numberLine += args.line_increment
-            else:
-                print(line)
-                numberLine = int(match.group(1)) + args.line_increment
+        self.args = args = createArgParser().parse_args()
+        self.numberLine = numberLine = args.starting_line_number
+        if len(args.sources) > 0:
+            for source in args.sources:
+                if source == "-":
+                    for line in sys.stdin:
+                        self.processLine(line)
+                else:
+                    with open(source, "rt") as f:
+                        lines = f.readlines()
+                    for line in lines:
+                        self.processLine(line)
+        else:
+            for line in sys.stdin:
+                self.processLine(line)
 
         return 0

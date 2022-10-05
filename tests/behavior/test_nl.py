@@ -35,8 +35,6 @@ from .utils import (
     assert_that_source_is_converted_as_expected,
 )
 
-input_archive = "sporny-basic.k7"
-
 
 def mockStdInput(lines):
     return io.StringIO("\n".join(lines) + "\n")
@@ -123,5 +121,30 @@ def test_that_it_uses_given_number_width():
             == """10   cls
 20   Print "Hello"
 30   locate 10,1
+"""
+        )
+
+
+def test_that_it_can_manage_files_and_stdin():
+    input_lines = ["cls", 'Print "Hello"', "locate 10,1"]
+    dataFolder = os.path.join(".", "tests", "data")
+    baseArgs = [
+        "prog",
+        os.path.join(dataFolder, "in1.bas"),
+        "-",
+        os.path.join(dataFolder, "in2.bas"),
+    ]
+    with patch.object(sys, "argv", baseArgs):
+        with patch.object(sys, "stdin", mockStdInput(input_lines)):
+            with redirect_stdout(io.StringIO()) as out:
+                returnCode = NumberLineCli().run()
+        assert returnCode == 0
+        assert (
+            out.getvalue()
+            == """10 print "hello from in1"
+20 cls
+30 Print "Hello"
+40 locate 10,1
+50 print "hello from in2"
 """
         )
