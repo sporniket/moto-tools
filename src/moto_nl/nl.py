@@ -26,7 +26,10 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 def createArgParser() -> ArgumentParser:
     parser = ArgumentParser(
         prog="python3 -m moto_nl",
-        description="Number the lines of the given MO/TO BASIC listing, where there are missing line numbers. An already numbered line is left untouched, and is taken into account to number the next line.",
+        description="Number the lines of the given MO/TO BASIC listing, "
+        "where there are missing line numbers. "
+        "An already numbered line is left untouched, "
+        "and is taken into account to number the next line.",
         epilog="""---
 (c) 2022 David SPORN
 ---
@@ -56,7 +59,11 @@ If not, see <https://www.gnu.org/licenses/>. 
         metavar="<source file>",
         type=str,
         nargs="*",
-        help="a list of source files",
+        help="a list of source files. one or more files to process ; "
+        "a dash `-` designate the standard input. "
+        "Without any file, it will also use the standard input as source. "
+        "When there are more than one source file, the numbering is done "
+        "as if the input was a single file being the concatenation of all those file.",
     )
 
     parser.add_argument(
