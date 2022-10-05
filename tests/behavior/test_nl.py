@@ -59,7 +59,7 @@ def test_that_it_does_number_lines():
         )
 
 
-def test_that_it_does_take_under_account_already_numbered_lines():
+def test_that_it_takes_already_numbered_lines_under_account():
     input_lines = ["cls", '5 Print "Hello"', "locate 10,1"]
     baseArgs = ["prog"]
     with patch.object(sys, "argv", baseArgs):
@@ -72,5 +72,56 @@ def test_that_it_does_take_under_account_already_numbered_lines():
             == """10 cls
 5 Print "Hello"
 15 locate 10,1
+"""
+        )
+
+
+def test_that_it_uses_given_starting_line_number():
+    input_lines = ["cls", 'Print "Hello"', "locate 10,1"]
+    baseArgs = ["prog", "-v", "3"]
+    with patch.object(sys, "argv", baseArgs):
+        with patch.object(sys, "stdin", mockStdInput(input_lines)):
+            with redirect_stdout(io.StringIO()) as out:
+                returnCode = NumberLineCli().run()
+        assert returnCode == 0
+        assert (
+            out.getvalue()
+            == """3 cls
+13 Print "Hello"
+23 locate 10,1
+"""
+        )
+
+
+def test_that_it_uses_given_line_increment():
+    input_lines = ["cls", 'Print "Hello"', "locate 10,1"]
+    baseArgs = ["prog", "-i", "3"]
+    with patch.object(sys, "argv", baseArgs):
+        with patch.object(sys, "stdin", mockStdInput(input_lines)):
+            with redirect_stdout(io.StringIO()) as out:
+                returnCode = NumberLineCli().run()
+        assert returnCode == 0
+        assert (
+            out.getvalue()
+            == """10 cls
+13 Print "Hello"
+16 locate 10,1
+"""
+        )
+
+
+def test_that_it_uses_given_number_width():
+    input_lines = ["cls", 'Print "Hello"', "locate 10,1"]
+    baseArgs = ["prog", "-w", "4"]
+    with patch.object(sys, "argv", baseArgs):
+        with patch.object(sys, "stdin", mockStdInput(input_lines)):
+            with redirect_stdout(io.StringIO()) as out:
+                returnCode = NumberLineCli().run()
+        assert returnCode == 0
+        assert (
+            out.getvalue()
+            == """10   cls
+20   Print "Hello"
+30   locate 10,1
 """
         )

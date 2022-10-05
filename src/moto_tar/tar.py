@@ -86,9 +86,10 @@ class TapeArchiveCliListener:
 
 
 class TapeArchiveCli:
+    @staticmethod
     def createArgParser() -> ArgumentParser:
         parser = ArgumentParser(
-            prog="python3 -m moto_tools_tar",
+            prog="python3 -m moto_tar",
             description="Assemble, list or extract files into or from a tape archive usable with MO/TO computer emulators.",
             epilog="""---
 (c) 2022 David SPORN
