@@ -27,7 +27,14 @@ Content
 
 ### Release notes
 
-> No release yet.
+#### v0.0.1
+
+The target platform is Thomson MO5. 
+
+Provides the following tools :
+
+* `moto_tar` : create, list or extract files to or from a tape archive format ; the command line interface is designed after the command `tar`.
+* `moto_nl` : number the lines of a basic source that have line numbers ; the command line interface is designed after the command `nl`.
 
 ## 2. What should you know before using **Sporniket's MO/TO tools** ?
 
@@ -85,7 +92,8 @@ See the [project issues](https://github.com/sporniket/moto-tools/issues) page.
 Supplemental documentation :
 
 * [README packaging](https://github.com/sporniket/moto-tools/blob/main/README-packaging.md) : some technical details about packaging this project.
-* [README cli tar](https://github.com/sporniket/moto-tools/blob/main/README-cli-tar.md) : the manual of the command line interface `moto_tools_tar`.
+* [README cli tar](https://github.com/sporniket/moto-tools/blob/main/README-cli-tar.md) : the manual of the command line interface `moto_tar`.
+* [README cli nl](https://github.com/sporniket/moto-tools/blob/main/README-cli-nl.md) : the manual of the command line interface `moto_nl`.
 * [Tape archive format](http://pulkomandy.tk/wiki/doku.php?id=documentations:monitor:tape.format) : the description of the format.
 
 ### Report issues
