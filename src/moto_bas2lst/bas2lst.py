@@ -60,12 +60,20 @@ If not, see <https://www.gnu.org/licenses/>. 
         " ASCII listing are indicated with a ',a' after the extension (case insensitive)",
     )
 
+    parser.add_argument(
+        "--dos",
+        action="store_true",
+        help=f"When present, use MS-DOS end of line (CR LF sequence).",
+    )
+
     return parser
 
 
 class BasicToListingCli:
     def run(self) -> int:
         self.args = args = createArgParser().parse_args()
+        endOfLine = bytes([0xD, 0xA]) if args.dos else bytes([0xA])
+
         for source in args.sources:
             asciiMode = False
             if source[-2:].upper() == ",A":
@@ -78,13 +86,16 @@ class BasicToListingCli:
             with open(source, "rb") as f:
                 data = f.read()
             if asciiMode:
-                lineOfCode = ""
-                for byte in data:
-                    if byte == 0xD:
-                        if len(lineOfCode) > 0:
-                            print(lineOfCode)
-                        lineOfCode = ""
-                    else:
-                        lineOfCode += bytes([byte]).decode("ascii")
-
+                with open(source[:-3] + "lst", "wb") as lst:
+                    lineOfCodeLength = 0
+                    for byte in data:
+                        if byte == 0xD:
+                            if lineOfCodeLength > 0:
+                                lst.write(endOfLine)
+                            lineOfCodeLength = 0
+                        else:
+                            lst.write(bytes([byte]))
+                            lineOfCodeLength += 1
+                if lineOfCodeLength > 0:
+                    lst.write(endOfLine)
         return 0
