@@ -120,6 +120,26 @@ def test_Tape_next_block_returns_next_block_until_no_more_bloc():
     assert tape.nextBlock() is None
 
 
+def test_Tape_next_block_returns_block_when_there_is_enough_ones_before_3c5a():
+    block = Tape(
+        b"\x01\x01\x01\x3c\x5a\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+    ).nextBlock()
+    assert block is not None
+    assert (
+        block.rawData
+        == b"\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+    )
+
+
+def test_Tape_next_block_returns_nothing_when_there_is_not_enough_ones_before_3c5a():
+    assert (
+        Tape(
+            b"\x01\x01\x3c\x5a\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+        ).nextBlock()
+        is None
+    )
+
+
 def test_Tape_next_block_returns_nothing_when_the_end_of_the_tape_happens_before_block_length():
     assert (
         Tape(

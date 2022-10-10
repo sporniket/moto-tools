@@ -106,7 +106,7 @@ class LeaderTapeBlockDescriptor:
         return TapeBlock.buildFromData(data, TypeOfTapeBlock.LEADER)
 
 
-startOfBlockSequenceToRead = b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x3c\x5a"
+startOfBlockSequenceToRead = b"\x01\x01\x01\x3c\x5a"
 startOfBlockSequenceToWrite = (
     b"\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x3c\x5a"
 )
