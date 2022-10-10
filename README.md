@@ -27,6 +27,12 @@ Content
 
 ### Release notes
 
+#### v0.0.2
+
+* Resolves #4 : [moto_tar][mo5] adjust the minimal sequence to spot the start of a bloc
+* Resolves #5 : [moto_bas2lst] Convert basic ascii file to plain text utf-8 file (#9)
+* Resolves #7 : [moto_lst2bas] Convert plain text files into ASCII basic
+
 #### v0.0.1
 
 The target platform is Thomson MO5. 
@@ -71,8 +77,6 @@ python3 -m moto_tools_tar [option] input_file
 ```
 
 ### Using pip
-
-> Not available yet
 
 ```
 pip install moto-tools-by-sporniket
