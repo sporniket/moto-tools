@@ -29,7 +29,7 @@ from typing import List, Union, Optional
 from unittest.mock import patch
 from contextlib import redirect_stdout
 
-from moto_bas2lst import BasicToListingCli
+from moto_lst2bas import ListingToBasicCli
 
 from .utils import (
     makeTmpDirOrDie,
@@ -40,10 +40,10 @@ from .utils import (
 source_dir = os.path.join(".", "tests", "data")
 source_dir_expected = os.path.join(".", "tests", "data.expected")
 
-source_files = ["B2LIN.BAS"]
+source_files = ["l2bin.lst"]
 
 
-def test_that_it_uses_unix_newlines_by_default():
+def test_that_it_convert_plain_text_to_ascii_basic():
     tmp_dir = initializeTmpWorkspace(
         [os.path.join(source_dir, f) for f in source_files]
     )
@@ -52,38 +52,15 @@ def test_that_it_uses_unix_newlines_by_default():
     ]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = BasicToListingCli().run()
+            returnCode = ListingToBasicCli().run()
         assert returnCode == 0
         assert out.getvalue() == ""
         for f in source_files:
-            pathActual = os.path.join(tmp_dir, f"{f[:-3]}lst")
+            pathActual = os.path.join(tmp_dir, f"{f[:-3]}bas")
             assert os.path.exists(pathActual) and os.path.isfile(pathActual)
             assert filecmp.cmp(
                 pathActual,
-                os.path.join(source_dir_expected, f"{f[:-4]}-unix.lst"),
-                shallow=False,
-            )
-    shutil.rmtree(tmp_dir)
-
-
-def test_that_it_uses_msdos_newlines_with_dos_switch():
-    tmp_dir = initializeTmpWorkspace(
-        [os.path.join(source_dir, f) for f in source_files]
-    )
-    baseArgs = ["prog", "--dos"] + [
-        os.path.join(tmp_dir, f"{source},a") for source in source_files
-    ]
-    with patch.object(sys, "argv", baseArgs):
-        with redirect_stdout(io.StringIO()) as out:
-            returnCode = BasicToListingCli().run()
-        assert returnCode == 0
-        assert out.getvalue() == ""
-        for f in source_files:
-            pathActual = os.path.join(tmp_dir, f"{f[:-3]}lst")
-            assert os.path.exists(pathActual) and os.path.isfile(pathActual)
-            assert filecmp.cmp(
-                pathActual,
-                os.path.join(source_dir_expected, f"{f[:-4]}-msdos.lst"),
+                os.path.join(source_dir_expected, f"{f[:-4]}.bas"),
                 shallow=False,
             )
     shutil.rmtree(tmp_dir)
