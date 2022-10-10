@@ -94,6 +94,7 @@ Supplemental documentation :
 * [README packaging](https://github.com/sporniket/moto-tools/blob/main/README-packaging.md) : some technical details about packaging this project.
 * [README cli tar](https://github.com/sporniket/moto-tools/blob/main/README-cli-tar.md) : the manual of the command line interface `moto_tar`.
 * [README cli nl](https://github.com/sporniket/moto-tools/blob/main/README-cli-nl.md) : the manual of the command line interface `moto_nl`.
+* [README cli nl](https://github.com/sporniket/moto-tools/blob/main/README-cli-bas2lst.md) : the manual of the command line interface `moto_bas2lst`.
 * [Tape archive format](http://pulkomandy.tk/wiki/doku.php?id=documentations:monitor:tape.format) : the description of the format.
 
 ### Report issues
