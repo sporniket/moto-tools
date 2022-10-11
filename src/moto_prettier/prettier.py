@@ -18,13 +18,8 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
-import sys
-from .prettier import PrettierCli
 
 
-def main():
-    sys.exit(PrettierCli().run())
-
-
-if __name__ == "__main__":
-    main()
+class PrettierCli:
+    def run(self) -> int:
+        return 0
