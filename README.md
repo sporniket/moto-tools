@@ -100,6 +100,7 @@ Supplemental documentation :
 * [README cli nl](https://github.com/sporniket/moto-tools/blob/main/README-cli-nl.md) : the manual of the command line interface `moto_nl`.
 * [README cli bas2lst](https://github.com/sporniket/moto-tools/blob/main/README-cli-bas2lst.md) : the manual of the command line interface `moto_bas2lst`.
 * [README cli lst2bas](https://github.com/sporniket/moto-tools/blob/main/README-cli-lst2bas.md) : the manual of the command line interface `moto_lst2bas`.
+* [README cli prettier](https://github.com/sporniket/moto-tools/blob/main/README-cli-prettier.md) : the manual of the command line interface `moto_prettier`.
 * [Tape archive format](http://pulkomandy.tk/wiki/doku.php?id=documentations:monitor:tape.format) : the description of the format.
 
 ### Report issues
