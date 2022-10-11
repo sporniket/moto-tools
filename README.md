@@ -27,6 +27,10 @@ Content
 
 ### Release notes
 
+#### v0.0.3
+
+* Resolves #6 [moto_prettier] force upper case outside litteral string
+
 #### v0.0.2
 
 * Resolves #4 : [moto_tar][mo5] adjust the minimal sequence to spot the start of a bloc
