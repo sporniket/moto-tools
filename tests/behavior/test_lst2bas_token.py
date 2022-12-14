@@ -60,7 +60,7 @@ def test_that_it_convert_plain_text_to_ascii_basic():
             assert os.path.exists(pathActual) and os.path.isfile(pathActual)
             assert filecmp.cmp(
                 pathActual,
-                os.path.join(source_dir_expected, f"{f[:-4]}-ascii.bas"),
+                os.path.join(source_dir_expected, f"{f[:-4]}-token.bas"),
                 shallow=False,
             )
     shutil.rmtree(tmp_dir)
