@@ -43,12 +43,12 @@ source_dir_expected = os.path.join(".", "tests", "data.expected")
 source_files = ["l2bin.lst"]
 
 
-def test_that_it_convert_plain_text_to_ascii_basic():
+def test_that_it_convert_plain_text_to_token_basic():
     tmp_dir = initializeTmpWorkspace(
         [os.path.join(source_dir, f) for f in source_files]
     )
     baseArgs = ["prog"] + [
-        os.path.join(tmp_dir, f"{source},a") for source in source_files
+        os.path.join(tmp_dir, f"{source}") for source in source_files
     ]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
