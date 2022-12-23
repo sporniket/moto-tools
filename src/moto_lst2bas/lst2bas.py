@@ -24,6 +24,8 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import io
 
+from moto_lib import TokenizerContext
+
 basicTokensDb = {
     "END": 0x80,
     "FOR": 0x81,
@@ -179,6 +181,8 @@ basicTokensDb = {
     "DSKI$": 0xFFB2,
 }
 
+litteralTokensDb = {}  # no tokenization in litterals
+
 
 def createArgParser() -> ArgumentParser:
     parser = ArgumentParser(
@@ -253,16 +257,16 @@ class ListingToBasicCli:
                 else:
                     header = bytearray()
                     body = bytearray()
-                    pointerNext = 0x2504
+                    pointerNext = 0x25A4
                     zeroUint8 = bytes([0])
                     zeroUint16 = bytes([0, 0])
 
                     # convert source line by line
+                    tokenizer = TokenizerContext()
                     for line in lines:
-                        accumulator = ""
-                        lineBuffer = bytearray()
+                        tokenizer.reset()
                         isInLiteralString = False
-                        # TODO extract the line number !!
+                        # 1 -- extract the line number and the first space after
                         match = re.search("^([1-9][0-9]*).*$", line)
                         if match is None:
                             raise ValueError(f"No line number in this line : '{line}'")
@@ -271,12 +275,19 @@ class ListingToBasicCli:
                             line = line[len(match.group(1)) : -1]
                             if line[0] == " ":
                                 line = line[1:]
+
+                        # 2 -- parse the line
                         for char in line:
                             charBytes = bytes(char, "utf-8")
                             if char == '"':
                                 isInLiteralString = not isInLiteralString
-                                lineBuffer += bytes(accumulator + char, "utf-8")
-                                accumulator = ""
+                                tokenizer.append(
+                                    char,
+                                    litteralTokensDb
+                                    if isInLiteralString
+                                    else basicTokensDb,
+                                )
+                                tokenizer.commit()
                                 continue
                             if isInLiteralString or char in [
                                 ".",
@@ -286,21 +297,25 @@ class ListingToBasicCli:
                                 ":",
                                 " ",
                             ]:
-                                lineBuffer += bytes(accumulator + char, "utf-8")
-                                accumulator = ""
+                                tokenizer.append(
+                                    char,
+                                    litteralTokensDb
+                                    if isInLiteralString
+                                    else basicTokensDb,
+                                )
+                                tokenizer.commit()
                                 continue
                             # not in string litteral, convert to uppercase
                             char = char.upper()
                             charBytes = bytes(char, "utf-8")
-                            accumulator += char
-                            if accumulator in basicTokensDb:
-                                tokenValue = basicTokensDb[accumulator]
-                                if tokenValue < 256:
-                                    lineBuffer.append(basicTokensDb[accumulator])
-                                else:
-                                    lineBuffer += self.toUint16(tokenValue)
-                                accumulator = ""
-                                continue
+                            tokenizer.append(
+                                char,
+                                litteralTokensDb
+                                if isInLiteralString
+                                else basicTokensDb,
+                            )
+                        tokenizer.commit()
+                        lineBuffer = tokenizer.doneBuffer
                         lineBuffer += zeroUint8
                         pointerNext += len(lineBuffer) + 4
                         body += self.toUint16(pointerNext)

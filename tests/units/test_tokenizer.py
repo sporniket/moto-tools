@@ -1,5 +1,4 @@
 """
-Support library for MO/TO tools.
 ---
 (c) 2022 David SPORN
 ---
@@ -19,13 +18,22 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
-from .fs_tape import *
-from .tokenizer import *
+from moto_lib import TokenizerContext
 
-__all__ = [
-    "TypeOfTapeBlock",
-    "TapeBlock",
-    "Tape",
-    "LeaderTapeBlockDescriptor",
-    "TokenizerContext",
-]
+
+def test_TokenizerContext_should_find_the_biggest_convertible_sequence_into_token():
+    tokens = {"a": 0x1, "b": 0x2, "ab": 0x3}
+    context = TokenizerContext()
+    for char in "abc":
+        context.append(char, tokens)
+    context.commit()
+    assert context.doneBuffer == b"\x03c"
+
+
+def test_TokenizerContext_should_find_the_multiple_token():
+    tokens = {"a": 0x1, "b": 0x2, "ab": 0x3}
+    context = TokenizerContext()
+    for char in "abac":
+        context.append(char, tokens)
+    context.commit()
+    assert context.doneBuffer == b"\x03\x01c"
