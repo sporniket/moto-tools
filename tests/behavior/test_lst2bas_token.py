@@ -40,7 +40,7 @@ from .utils import (
 source_dir = os.path.join(".", "tests", "data")
 source_dir_expected = os.path.join(".", "tests", "data.expected")
 
-source_files = ["l2bin.lst"]
+source_files = ["l2bin-to-tokenize.lst"]
 
 
 def test_that_it_convert_plain_text_to_token_basic():
@@ -60,7 +60,7 @@ def test_that_it_convert_plain_text_to_token_basic():
             assert os.path.exists(pathActual) and os.path.isfile(pathActual)
             assert filecmp.cmp(
                 pathActual,
-                os.path.join(source_dir_expected, f"{f[:-4]}-token.bas"),
+                os.path.join(source_dir_expected, f"{f[:-4]}.bas"),
                 shallow=False,
             )
     shutil.rmtree(tmp_dir)
