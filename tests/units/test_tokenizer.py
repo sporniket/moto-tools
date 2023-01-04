@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
-from moto_lib import TokenizerContext
+from moto_lib import TokenizerContext, TokenizerPhase, TokenizerPhaseAutomaton
 
 
 def test_TokenizerContext_should_find_the_biggest_convertible_sequence_into_token():
@@ -37,3 +37,18 @@ def test_TokenizerContext_should_find_the_multiple_token():
         context.append(char, tokens)
     context.commit()
     assert context.doneBuffer == b"\x03\x01c"
+
+
+def test_TokenizerPhaseAutomaton_should_switch_when_conditions_are_met():
+    tokens = {}
+    context = TokenizerContext()
+    context.append("whatever", tokens)
+    automaton = TokenizerPhaseAutomaton(["whatever"], [":"])
+    assert automaton.phase == TokenizerPhase.DO_TOKENIZE
+    assert automaton.update(context, "don't mind me")
+    assert automaton.phase == TokenizerPhase.WAIT_NEXT_STATEMENT
+    assert automaton.update(context, ":")
+    assert automaton.phase == TokenizerPhase.DO_TOKENIZE
+
+    context.append("nevermind", tokens)
+    assert not automaton.update(context, "don't mind me")

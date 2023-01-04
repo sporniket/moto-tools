@@ -20,6 +20,9 @@ If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
 
+from enum import Enum
+from typing import List
+
 
 def toUint8(value):
     return bytes([value & 0xFF])
@@ -63,3 +66,56 @@ class TokenizerContext:
             # found an early tokenizable sequence
             self.candidateBuffer += bytesFromUint(registryOfTokens[self.bucket])
             self.bucket = ""
+
+
+class TokenizerPhase(Enum):
+    """
+    Distinguish phases when the tokenizer CAN tokenize, and phases when it CANNOT.
+    """
+
+    DO_TOKENIZE = 0
+    WAIT_NEXT_STATEMENT = 1
+
+
+class TokenizerPhaseAutomaton:
+    """
+    Automaton tasked with assessing when the tokenizer can tokenize, and when it cannot.
+    """
+
+    def __init__(
+        self, matchersForWaitNextStatement: List[str], matchersForDoTokenize: List[str]
+    ):
+        """
+        Initialize the automaton to an initial state, and setup the matchers
+
+        Args:
+            matchersForWaitNextStatement (List[str]): after those sequences, the automaton will assess that the tokenizer CANNOT parse.
+            matchersForDoTokenize (List[str]): after those sequences, the automaton will assess that the tokenizer CAN parse.
+        """
+        self.phase = TokenizerPhase.DO_TOKENIZE
+        self.matchersForWaitNextStatement = matchersForWaitNextStatement
+        self.matchersForDoTokenize = matchersForDoTokenize
+
+    def update(self, context: TokenizerContext, lastChar: str) -> bool:
+        """
+        Update the automaton state, return True if state changed
+
+        Args:
+            context (TokenizerContext): the current tokenizer context
+            lastChar (str): the last char appended to the context
+
+        Returns:
+            bool: True if the state of automaton changed, False otherwise.
+        """
+        if self.phase == TokenizerPhase.DO_TOKENIZE:
+            if (
+                context.sourceSequence in self.matchersForWaitNextStatement
+                or context.bucket in self.matchersForWaitNextStatement
+            ):
+                self.phase = TokenizerPhase.WAIT_NEXT_STATEMENT
+                return True
+        else:  # self.phase == TokenizerPhase.WAIT_NEXT_STATEMENT
+            if lastChar in self.matchersForDoTokenize:
+                self.phase = TokenizerPhase.DO_TOKENIZE
+                return True
+        return False

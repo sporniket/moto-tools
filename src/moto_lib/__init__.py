@@ -28,4 +28,6 @@ __all__ = [
     "Tape",
     "LeaderTapeBlockDescriptor",
     "TokenizerContext",
+    "TokenizerPhase",
+    "TokenizerPhaseAutomaton",
 ]
