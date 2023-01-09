@@ -56,7 +56,7 @@ class TokenizerContext:
         self.bucket = ""
 
     def append(self, inputSeq, registryOfTokens):
-        self.bucket += inputSeq
+        tmpBucket = self.bucket + inputSeq
         self.sourceSequence += inputSeq
         if self.sourceSequence in registryOfTokens:
             # found biggest sequence convertible
@@ -66,6 +66,13 @@ class TokenizerContext:
             # found an early tokenizable sequence
             self.candidateBuffer += bytesFromUint(registryOfTokens[self.bucket])
             self.bucket = ""
+        elif inputSeq in registryOfTokens:
+            # found a token on the spot
+            self.commit()
+            self.candidateBuffer += bytesFromUint(registryOfTokens[inputSeq])
+            self.commit()
+        else:
+            self.bucket += inputSeq
 
 
 class TokenizerPhase(Enum):
