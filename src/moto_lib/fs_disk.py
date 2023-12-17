@@ -400,47 +400,51 @@ class DiskTrack:
     SECTORS_PER_TRACK = 16
 
     @staticmethod
-    def sizeOfTrack(sizeOfSector:int):
+    def sizeOfTrack(sizeOfSector: int):
         return SECTORS_PER_TRACK * sizeOfSector
 
     def __init__(
         self,
         rawData: bytearray or bytes = bytes(),
+        *,
         typeOfDiskImage: TypeOfDiskImage = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE,
     ):
         self._sizeOfSector = _sizeOfSector = DiskSector.sizeOfSector(typeOfDiskImage)
         self._sizeOfTrack = _sizeOfTrack = DiskTrack.sizeOfTrack(_sizeOfSector)
         dataSize = len(rawData)
-        if dataSize > 0 and dataSize < _sizeOfTrack:
-            raise ValueError(
-                f"Non empty rawData should have a length of {_sizeOfTrack} bytes for {typeOfDiskImage.name}, got {len(rawData)}"
-            )
 
         if dataSize == 0:
             self._sectors = [
                 DiskSector(typeOfDiskImage=typeOfDiskImage)
                 for i in range(SECTORS_PER_TRACK)
             ]
-        else:
+        elif dataSize >= _sizeOfTrack:
             self._sectors = [
                 DiskSector(
                     rawData[(i * _sizeOfSector) : ((i + 1) * _sizeOfSector)]
                     for i in range(SECTORS_PER_TRACK)
                 )
             ]
+        else:
+            raise ValueError(
+                f"Non empty rawData should have a length of {_sizeOfTrack} bytes for {typeOfDiskImage.name}, got {dataSize}"
+            )
 
     @property
     def sectors(self):
         return [self._sectors[i] for i in range(SECTORS_PER_TRACK)]
 
     def write(self, rawData: bytearray or bytes):
+        dataSize = len(rawData)
         if dataSize < self._sizeOfTrack:
             raise ValueError(
-                f"rawData should have a length of {self._sizeOfTrack} bytes for {typeOfDiskImage.name}, got {len(rawData)}"
+                f"rawData should have a length of {self._sizeOfTrack} bytes for {typeOfDiskImage.name}, got {dataSize}"
             )
 
         for sector in self._sectors:
-            sector.data = rawData[(i * self._sizeOfSector) : ((i + 1) * self._sizeOfSector)]
+            sector.data = rawData[
+                (i * self._sizeOfSector) : ((i + 1) * self._sizeOfSector)
+            ]
 
     def rawData(self):
         result = bytearray(self._sizeOfTrack)
@@ -455,7 +459,7 @@ class DiskSide:
     TRACKS_PER_SIDE = 40
 
     @staticmethod
-    def sizeOfSide(sizeOfTrack:int):
+    def sizeOfSide(sizeOfTrack: int):
         return TRACKS_PER_SIDE * sizeOfTrack
 
     def __init__(
@@ -466,4 +470,23 @@ class DiskSide:
         self._sizeOfSector = _sizeOfSector = DiskSector.sizeOfSector(typeOfDiskImage)
         self._sizeOfTrack = _sizeOfTrack = DiskTrack.sizeOfTrack(_sizeOfSector)
         self._sizeOfSide = _sizeOfSide = DiskSide.sizeOfSide(_sizeOfTrack)
+        dataSize = len(rawData)
 
+        if dataSize == 0:
+            self._tracks = [
+                DiskTrack(typeOfDiskImage=typeOfDiskImage)
+                for i in range(TRACKS_PER_SIDE)
+            ]
+        elif dataSize >= _sizeOfSide:
+            self._tracks = [
+                DiskSector(rawData[i * _sizeOfTrack : (i + 1) * _sizeOfTrack])
+                for i in range(TRACKS_PER_SIDE)
+            ]
+        else:
+            raise ValueError(
+                f"Non empty rawData should have a length of {_sizeOfSide} bytes for {typeOfDiskImage.name}, got {dataSize}"
+            )
+
+    @property
+    def tracks(self):
+        return [self._tracks[i] for i in range(TRACKS_PER_SIDE)]
