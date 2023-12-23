@@ -19,6 +19,9 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
+from enum import Enum
+from typing import List
+
 TYPE_OF_FILE_AS_STRING = ["B", "D", "M", "A"]
 TYPE_OF_FILE_AS_CATALOG_STRING = ["BASIC", "DATA", "MODULE", "TEXT"]
 TYPE_OF_DATA_AS_CATALOG_STRING = ["BINARY", "ASCII"]
@@ -34,7 +37,7 @@ class TypeOfDiskImage(Enum):
         return cls(value)
 
     def sizeOfSector(self):
-        return 256 if self == EMULATOR_FLOPPY_IMAGE else 512
+        return 256 if self == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE else 512
 
 
 class TypeOfFile(Enum):
@@ -48,7 +51,7 @@ class TypeOfFile(Enum):
         return cls(value)
 
     def asCharacterCode(self) -> str:
-        return TYPE_OF_FILE_AS_STRING[type.value]
+        return TypeOfFile.TYPE_OF_FILE_AS_STRING[type.value]
 
     def asByte(self) -> int:
         return self.value
@@ -299,7 +302,8 @@ def extractCatalogEntriesFromSector(
 
 
 def extractCatalogFromTrack(
-    data: bytearray or bytes, typeOfDiskImage: TypeOfDiskImage = EMULATOR_FLOPPY_IMAGE
+    data: bytearray or bytes,
+    typeOfDiskImage: TypeOfDiskImage = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE,
 ):
     intervalOfSlice = typeOfDiskImage.sizeOfSector()
     # extract BAT
@@ -319,39 +323,31 @@ def extractCatalogFromTrack(
 
 
 ######################################################## BEGIN HERE
+# private shorthand values
+_SIZE_OF_SECTOR_DD = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE.sizeOfSector()
+_SIZE_OF_SECTOR_SDDRIVE = TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE.sizeOfSector()
+_FILLER_SDDRIVE = 0xFF
 
 
 class DiskSector:
     ###
     # We will work either with Double Density sectors, or SDDrive sectors
     #
-    SIZE_OF_SECTOR_DD = 256  # we will work with double density image
-    SIZE_OF_SECTOR_SDDRIVE = (
-        512  # original sector filled with padding value to match SD Card sector size
-    )
+    SIZE_OF_SECTOR_DD = _SIZE_OF_SECTOR_DD  # we will work with double density image
+    SIZE_OF_SECTOR_SDDRIVE = _SIZE_OF_SECTOR_SDDRIVE  # original sector filled with padding value to match SD Card sector size
     FILLER_FDDRIVE = 0xE5  # seems to be the value written by a floppy drive when low-level formatting.
 
     ###
     # SDDrive sectors are just normal sectors embedded in a SD Card sector.
     #
-    FILLER_SDDRIVE = 0xFF  # used to fill spacing data
+    FILLER_SDDRIVE = _FILLER_SDDRIVE  # used to fill spacing data
     SDDRIVE_PADDING_DD = bytes(
-        [FILLER_SDDRIVE for i in range(SIZE_OF_SECTOR_SDDRIVE - SIZE_OF_SECTOR_DD)]
+        [_FILLER_SDDRIVE for i in range(_SIZE_OF_SECTOR_SDDRIVE - _SIZE_OF_SECTOR_DD)]
     )  # padding to add after sector data
-
-    ###
-    # For the day there is to manage Simple Density sectors
-    #
-    # SIZE_OF_SECTOR_SD = 128
-    # SDDRIVE_PADDING_SD = bytes([FILLER_SDDRIVE for i in range (SIZE_OF_SECTOR_SDDRIVE - SIZE_OF_SECTOR_SD)])
 
     @staticmethod
     def sizeOfSector(typeOfDiskImage: TypeOfDiskImage):
-        return (
-            SIZE_OF_SECTOR_DD
-            if typeOfDiskImage == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
-            else SIZE_OF_SECTOR_SDDRIVE
-        )
+        return typeOfDiskImage.sizeOfSector()  ## thus duplicate of the enum method...
 
     def __init__(
         self,
@@ -360,18 +356,20 @@ class DiskSector:
         typeOfDiskImage: TypeOfDiskImage = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE,
     ):
         # always use self._sizeOfPayload for the day there is simple density.
-        self._sizeOfPayload = SIZE_OF_SECTOR_DD
+        self._sizeOfPayload = DiskSector.SIZE_OF_SECTOR_DD
         self._typeOfDiskImage = typeOfDiskImage
         self._sizeOfSector = DiskSector.sizeOfSector(typeOfDiskImage)
 
         if typeOfDiskImage == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE:
             self._padding = None
         else:
-            self._padding = SDDRIVE_PADDING_DD
+            self._padding = DiskSector.SDDRIVE_PADDING_DD
 
         # Only takes care of the floppy sector, without filling data for sddrive.
         if len(rawData) < self._sizeOfPayload:
-            self._data = bytearray([FILLER_FDDRIVE for i in range(self._sizeOfPayload)])
+            self._data = bytearray(
+                [DiskSector.FILLER_FDDRIVE for i in range(self._sizeOfPayload)]
+            )
             self._data[: len(rawData)] = rawData
         else:
             self._data = bytearray(rawData[: self._sizeOfPayload])
@@ -393,7 +391,9 @@ class DiskSector:
             self._data = bytearray(rawData[: self._sizeOfPayload])
 
     def erase(self):
-        self._data[:] = bytearray([FILLER_FDDRIVE for i in range(self._sizeOfPayload)])
+        self._data[:] = bytearray(
+            [DiskSector.FILLER_FDDRIVE for i in range(self._sizeOfPayload)]
+        )
 
 
 class DiskTrack:
@@ -401,7 +401,7 @@ class DiskTrack:
 
     @staticmethod
     def sizeOfTrack(sizeOfSector: int):
-        return SECTORS_PER_TRACK * sizeOfSector
+        return DiskTrack.SECTORS_PER_TRACK * sizeOfSector
 
     def __init__(
         self,
@@ -416,13 +416,13 @@ class DiskTrack:
         if dataSize == 0:
             self._sectors = [
                 DiskSector(typeOfDiskImage=typeOfDiskImage)
-                for i in range(SECTORS_PER_TRACK)
+                for i in range(DiskTrack.SECTORS_PER_TRACK)
             ]
         elif dataSize >= _sizeOfTrack:
             self._sectors = [
                 DiskSector(
                     rawData[(i * _sizeOfSector) : ((i + 1) * _sizeOfSector)]
-                    for i in range(SECTORS_PER_TRACK)
+                    for i in range(DiskTrack.SECTORS_PER_TRACK)
                 )
             ]
         else:
@@ -432,7 +432,7 @@ class DiskTrack:
 
     @property
     def sectors(self):
-        return [self._sectors[i] for i in range(SECTORS_PER_TRACK)]
+        return [self._sectors[i] for i in range(DiskTrack.SECTORS_PER_TRACK)]
 
     def write(self, rawData: bytearray or bytes):
         dataSize = len(rawData)
@@ -460,7 +460,7 @@ class DiskSide:
 
     @staticmethod
     def sizeOfSide(sizeOfTrack: int):
-        return TRACKS_PER_SIDE * sizeOfTrack
+        return DiskSide.TRACKS_PER_SIDE * sizeOfTrack
 
     def __init__(
         self,
@@ -475,12 +475,12 @@ class DiskSide:
         if dataSize == 0:
             self._tracks = [
                 DiskTrack(typeOfDiskImage=typeOfDiskImage)
-                for i in range(TRACKS_PER_SIDE)
+                for i in range(DiskSide.TRACKS_PER_SIDE)
             ]
         elif dataSize >= _sizeOfSide:
             self._tracks = [
                 DiskSector(rawData[i * _sizeOfTrack : (i + 1) * _sizeOfTrack])
-                for i in range(TRACKS_PER_SIDE)
+                for i in range(DiskSide.TRACKS_PER_SIDE)
             ]
         else:
             raise ValueError(
@@ -489,4 +489,4 @@ class DiskSide:
 
     @property
     def tracks(self):
-        return [self._tracks[i] for i in range(TRACKS_PER_SIDE)]
+        return [self._tracks[i] for i in range(DiskSide.TRACKS_PER_SIDE)]
