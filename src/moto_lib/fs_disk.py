@@ -27,6 +27,8 @@ TYPE_OF_FILE_AS_CATALOG_STRING = ["BASIC", "DATA", "MODULE", "TEXT"]
 TYPE_OF_DATA_AS_CATALOG_STRING = ["BINARY", "ASCII"]
 TYPE_OF_DATA_AS_CATALOG_STRING_WHEN_BASIC = ["TOKEN", "ASCII"]
 
+_CHAR_TO_INT_MAP = {"B": 0, "D": 1, "M": 2, "A": 3}
+
 
 class TypeOfDiskImage(Enum):
     EMULATOR_FLOPPY_IMAGE = 0
@@ -40,7 +42,7 @@ class TypeOfDiskImage(Enum):
         return 256 if self == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE else 512
 
 
-class TypeOfFile(Enum):
+class TypeOfDiskFile(Enum):
     BASIC_PROGRAM = 0
     BASIC_DATA = 1
     MACHINE_LANGUAGE_PROGRAM = 2
@@ -50,8 +52,14 @@ class TypeOfFile(Enum):
     def fromInt(cls, value: int):
         return cls(value)
 
+    @classmethod
+    def fromCharacterCode(cls, value: str):
+        if value not in TYPE_OF_FILE_AS_STRING:
+            raise ValueError(f"Unknown character code '{value}'")
+        return cls(_CHAR_TO_INT_MAP[value])
+
     def asCharacterCode(self) -> str:
-        return TypeOfFile.TYPE_OF_FILE_AS_STRING[type.value]
+        return TYPE_OF_FILE_AS_STRING[self.value]
 
     def asByte(self) -> int:
         return self.value
@@ -159,7 +167,7 @@ class CatalogEntry:
     def __init__(
         self,
         name: NameOfFile,
-        typeOfFile: TypeOfFile,
+        typeOfFile: TypeOfDiskFile,
         typeOfData: TypeOfData,
         firstBlock: int,
         blockchain: List[int],
@@ -291,7 +299,7 @@ def extractCatalogEntriesFromSector(
         result += [
             CatalogEntry(
                 NameOfFile(entryData[0:8], entryData[8:11]),
-                TypeOfFile.fromInt(entryData[11]),
+                TypeOfDiskFile.fromInt(entryData[11]),
                 TypeOfData.fromInt(entryData[12]),
                 firstBlock,
                 blockchain,

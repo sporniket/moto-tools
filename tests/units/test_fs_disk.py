@@ -19,14 +19,44 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
-from moto_lib import TypeOfDiskImage
+from moto_lib import TypeOfDiskImage, TypeOfDiskFile
 
 
-def test_TypeOfDiskImage_fromInt_should_return_expected_enum_value():
-    assert TypeOfDiskImage.fromInt(0) == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
-    assert TypeOfDiskImage.fromInt(1) == TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+######################################################## Test suite for TypeOfDiskImage
 
 
-def test_TypeOfDiskImage_sizeOfSector_should_return_expected_size():
-    assert TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE.sizeOfSector() == 256
-    assert TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE.sizeOfSector() == 512
+def test_TypeOfDiskImage_should_verify_expectations():
+    then_TypeOfDiskImage_verify_expectations(
+        TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE, 0, 256
+    )
+    then_TypeOfDiskImage_verify_expectations(
+        TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE, 1, 512
+    )
+
+
+def then_TypeOfDiskImage_verify_expectations(
+    typeOfImage: TypeOfDiskImage, intValue: int, sizeOfSector: int
+):
+    assert TypeOfDiskImage.fromInt(intValue) == typeOfImage
+    assert typeOfImage.sizeOfSector() == sizeOfSector
+
+
+######################################################## Test suite for TypeOfDiskFile
+
+
+def test_TypeOfDiskFile_should_verify_expectations():
+    then_TypeOfDiskFile_verify_expectations(TypeOfDiskFile.BASIC_PROGRAM, 0, "B")
+    then_TypeOfDiskFile_verify_expectations(TypeOfDiskFile.BASIC_DATA, 1, "D")
+    then_TypeOfDiskFile_verify_expectations(
+        TypeOfDiskFile.MACHINE_LANGUAGE_PROGRAM, 2, "M"
+    )
+    then_TypeOfDiskFile_verify_expectations(TypeOfDiskFile.TEXT_FILE, 3, "A")
+
+
+def then_TypeOfDiskFile_verify_expectations(
+    typeOfFile: TypeOfDiskFile, intValue: int, charValue: str
+):
+    assert TypeOfDiskFile.fromInt(intValue) == typeOfFile
+    assert TypeOfDiskFile.fromCharacterCode(charValue) == typeOfFile
+    assert typeOfFile.asCharacterCode() == charValue
+    assert typeOfFile.asByte() == intValue
