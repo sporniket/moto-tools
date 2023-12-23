@@ -1,5 +1,5 @@
 """
-Support library for MO/TO tools.
+@Since v0.0.4
 ---
 (c) 2022 David SPORN
 ---
@@ -19,13 +19,14 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
-from .fs_tape import *
-from .fs_disk import *
+from moto_lib import TypeOfDiskImage
 
-__all__ = [
-    "TypeOfTapeBlock",
-    "TapeBlock",
-    "Tape",
-    "LeaderTapeBlockDescriptor",
-    "TypeOfDiskImage",
-]
+
+def test_TypeOfDiskImage_fromInt_should_return_expected_enum_value():
+    assert TypeOfDiskImage.fromInt(0) == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+    assert TypeOfDiskImage.fromInt(1) == TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+
+
+def test_TypeOfDiskImage_sizeOfSector_should_return_expected_size():
+    assert TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE.sizeOfSector() == 256
+    assert TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE.sizeOfSector() == 512
