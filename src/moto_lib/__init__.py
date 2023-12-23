@@ -28,4 +28,5 @@ __all__ = [
     "Tape",
     "LeaderTapeBlockDescriptor",
     "TypeOfDiskImage",
+    "TypeOfDiskFile",
 ]
