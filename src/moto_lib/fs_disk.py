@@ -107,13 +107,13 @@ class NameOfFile:
             self._name[0 : len(name)] = name
         else:
             self._name = name[0 : len(self._name)]
-            self._overflow = true
+            self._overflow = True
             self._wanted_name = name
         if len(suffix) <= len(self._suffix):
             self._suffix[0 : len(suffix)] = suffix
         else:
             self._suffix = suffix[0 : len(self._suffix)]
-            self._overflow = true
+            self._overflow = True
             self._wanted_suffix = suffix
         self._deleted = self._name[0] == 0
         self._free = self._name[0] == 0xFF
@@ -303,7 +303,7 @@ def extractCatalogEntriesFromSector(
                 TypeOfData.fromInt(entryData[12]),
                 firstBlock,
                 blockchain,
-                entry[14] * 256 + entry[15],
+                entryData[14] * 256 + entryData[15],
             )
         ]
     return result
@@ -419,6 +419,7 @@ class DiskTrack:
     ):
         self._sizeOfSector = _sizeOfSector = DiskSector.sizeOfSector(typeOfDiskImage)
         self._sizeOfTrack = _sizeOfTrack = DiskTrack.sizeOfTrack(_sizeOfSector)
+        self._typeOfDiskImage = typeOfDiskImage
         dataSize = len(rawData)
 
         if dataSize == 0:
@@ -446,10 +447,10 @@ class DiskTrack:
         dataSize = len(rawData)
         if dataSize < self._sizeOfTrack:
             raise ValueError(
-                f"rawData should have a length of {self._sizeOfTrack} bytes for {typeOfDiskImage.name}, got {dataSize}"
+                f"rawData should have a length of {self._sizeOfTrack} bytes for {self._typeOfDiskImage.name}, got {dataSize}"
             )
 
-        for sector in self._sectors:
+        for i, sector in enumerate(self._sectors):
             sector.data = rawData[
                 (i * self._sizeOfSector) : ((i + 1) * self._sizeOfSector)
             ]
