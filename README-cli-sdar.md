@@ -1,30 +1,30 @@
-# The command line interface of moto_fdar
+# The command line interface of moto_sdar
 
 ## Synopsis
 
 ```
-python3 -m moto_fdar --create [--verbose] [--into <path>] [--reference <ref_archive.fd>] <archive.fd> [<source-files>...]
+python3 -m moto_sdar --create [--verbose] [--into <path>] [--reference <ref_archive.sd>] <archive.sd> [<source-files>...]
 ```
 
-Assemble the designated files into a floppy disk archive suitable for MO5 emulators. The disk archive MAY be created by starting from a reference disk archive, e.g. [an image with the DOS Basic](http://dcmoto.free.fr/programmes/dos-3.5/index.html) that would make the resulting image into a bootable disk.
+Assemble the designated files into a floppy disk archive suitable for the SDDrive. The disk archive MAY be created by starting from a reference disk archive, e.g. [an image with the DOS Basic](http://dcmoto.free.fr/programmes/dos-3.5/index.html) that would make the resulting image into a bootable disk.
 
 ```
-python3 -m moto_fdar --list [--verbose] <archive.fd>
+python3 -m moto_sdar --list [--verbose] <archive.sd>
 ```
 
 List all the files contained inside a floppy disk archive readable by MO5 emulators.
 
 ```
-python3 -m moto_fdar --extract [--verbose] [--into <path>] <archive.fd>
+python3 -m moto_sdar --extract [--verbose] [--into <path>] <archive.sd>
 ```
 
 Extract all the files contained inside a floppy disk archive readable by MO5 emulators.
 
 ## Mandatory arguments
 
-* `--create <archive.fd>` or `--list <archive.fd>` or `--extract <archive.fd>` : the operation to perform.
+* `--create <archive.sd>` or `--list <archive.sd>` or `--extract <archive.sd>` : the operation to perform.
 
-* `<archive.fd>` : the specified floppy disk archive, with the `fd` extension.
+* `<archive.sd>` : the specified floppy disk archive, with the `fd` extension.
 
 ## Optional arguments
 
@@ -42,7 +42,7 @@ Extract all the files contained inside a floppy disk archive readable by MO5 emu
 
 * `--into [path]` : directory where the created floppy disk archive or the extracted files will be stored ; when not specified, they are stored in the current directory.
 
-* `--reference <ref_archive.fd>` : references an archive that will serve as a basis for the created archive (the reference archive is left untouched). This allow the creation of _bootable_ disk images : by default `moto_fdar` will create an archive looking like a blank formatted floppy disk into which all the source files have been written, thus a _non bootable_ disk. To create a _bootable_ disk image, one must have e.g. [an image with the DOS Basic](http://dcmoto.free.fr/programmes/dos-3.5/index.html), and use it as reference.
+* `--reference <ref_archive.sd>` : references an archive that will serve as a basis for the created archive (the reference archive is left untouched). This allow the creation of _bootable_ disk images : by default `moto_sdar` will create an archive looking like a blank formatted floppy disk into which all the source files have been written, thus a _non bootable_ disk. To create a _bootable_ disk image, one must have e.g. [an image with the DOS Basic](http://dcmoto.free.fr/programmes/dos-3.5/index.html), and use it as reference.
 
 ## File handling
 
@@ -76,19 +76,17 @@ Source : [_Le basic DOS du TO7, TO7-70 et du MO5_, by Christine Blondel and Fran
 
 > On a physical disk, sectors are usually not stored in order, but are intertwined, to create a delay before the start of the next sector read/write. The computer's floppy disk routines leverage this delay to perform some data book-keeping.
 
-### Emulator disk archive
+### SDDrive disk archive
 
-> Source : [Transferts Thomson <-> PC](http://dcmoto.free.fr/forum/messages/644139_0.html)
+> Source : [SDDRIVE homepage](http://dcmoto.free.fr/bricolage/sddrive/index.html)
 
-_Emulators usually assume 3½-inch double density disks with 80 tracks per sides_
+_SDDrive assume 80 tracks per sides_
 
-* `*.fd` files are made of blocks of 256 bytes. 
-* Each block contains the data of a floppy disk sector.
+Essentially, the SDDrive disk archive is structured like an emulator disk archive, with the following differences :
+
+* `*.sd` files are made of blocks of **512** bytes.
+* The first 256 bytes of each block contains the data of a floppy disk sector.
+* The last 256 bytes of each block are filled with `$FF`.
 * Sectors are laid out in logical order, from sector #1 to sector #16, starting with track #0 of side #0. 
 * All the tracks of the same side are laid out in order, from track #0 to track #79. 
-* All the sides of a disk are stored in order, from side #0 to side #1
-* An image MAY concatenate 2 disks to simulate unit #0 to #3.
-* The size of an image of a single-sided disk is 327680 bytes.
-* The size of an image of a double-sided disk is 655360 bytes.
-
-> `moto_fdar` will only create a single disk archive, with either one or two sides. 
+* An image WILL ALWAYS contains 4 disks sides, with a total size of 2621440 bytes.
