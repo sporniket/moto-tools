@@ -65,6 +65,7 @@ class TypeOfDiskFile(Enum):
         return self.value
 
 
+# ASSESS USEFULLNESS
 class TypeOfData(Enum):
     BINARY_DATA = 0
     ASCII_DATA = 1
@@ -80,6 +81,7 @@ class TypeOfData(Enum):
         return 0 if self.value == 0 else 0xFF
 
 
+# ASSESS USEFULLNESS
 class NameOfFile:
     def __init__(self, name: bytearray, suffix: bytearray):
         self._name = bytearray(
@@ -163,6 +165,7 @@ class NameOfFile:
         return f"{self.stringFromName.rstrip()}.{self.stringFromSuffix.rstrip()}"
 
 
+# ASSESS USEFULLNESS
 class CatalogEntry:
     def __init__(
         self,
@@ -214,6 +217,7 @@ class CatalogEntry:
         return f"{nameColumn}\t{typeOfFile}\t{typeOfData}\t#{self.firstBlock}\t{fmtdSizeOfFile}{fmtdNumberOfBlocks}"
 
 
+# ASSESS USEFULLNESS
 class BlockStatus(Enum):
     """A list of values to be used as range limit or special values."""
 
@@ -226,6 +230,7 @@ class BlockStatus(Enum):
     FREE = 0xFF
 
 
+# ASSESS USEFULLNESS
 class BlocAllocation:
     def __init__(self, id: int, status: int = BlockStatus.FREE.value):
         if id < BlockStatus.MIN_NEXT.value or id >= BlockStatus.MAX_NEXT.value:
@@ -265,13 +270,14 @@ class BlocAllocation:
 ## Extraction des données disques
 
 
+# ASSESS USEFULLNESS
 def extractBlockAllocationTableFromSector(
     data: bytearray or bytes,
 ) -> List[BlocAllocation]:
     usefullData = data[1:81]
     return [BlocAllocation(i, data[i]) for i in range(0, 80)]
 
-
+# ASSESS USEFULLNESS
 def extractCatalogEntriesFromSector(
     data: bytearray or bytes, bat: List[BlocAllocation]
 ) -> List[CatalogEntry]:
@@ -308,7 +314,7 @@ def extractCatalogEntriesFromSector(
         ]
     return result
 
-
+# ASSESS USEFULLNESS
 def extractCatalogFromTrack(
     data: bytearray or bytes,
     typeOfDiskImage: TypeOfDiskImage = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE,
@@ -337,6 +343,7 @@ _SIZE_OF_SECTOR_SDDRIVE = TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE.sizeOfSector()
 _FILLER_SDDRIVE = 0xFF
 
 
+# ASSESS USEFULLNESS
 class DiskSector:
     ###
     # We will work either with Double Density sectors, or SDDrive sectors
@@ -404,6 +411,7 @@ class DiskSector:
         )
 
 
+# ASSESS USEFULLNESS
 class DiskTrack:
     SECTORS_PER_TRACK = 16
 
@@ -463,9 +471,9 @@ class DiskTrack:
             ] = sector.data
         return bytes(result)
 
-
+# ASSESS USEFULLNESS
 class DiskSide:
-    TRACKS_PER_SIDE = 40
+    TRACKS_PER_SIDE = 80
 
     @staticmethod
     def sizeOfSide(sizeOfTrack: int):
@@ -499,3 +507,5 @@ class DiskSide:
     @property
     def tracks(self):
         return [self._tracks[i] for i in range(DiskSide.TRACKS_PER_SIDE)]
+
+class D
