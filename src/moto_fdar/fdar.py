@@ -192,11 +192,28 @@ If not, see <https://www.gnu.org/licenses/>. 
             with open(args.archive, "wb") as fdar:
                 fdar.write(disk.rawData)
 
-        elif args.list or args.extract:
+        elif args.extract:
             with open(args.archive, "rb") as fdar:
                 # TODO
-                raise RuntimeError("LOAD NOT IMPLEMENTED")
+                raise RuntimeError("NOT IMPLEMENTED")
             targetDir = (
                 args.into if hasTargetDirectory else os.path.dirname(args.archive)
             )
+        
+        elif args.list:
+            with open(args.archive, "rb") as fdar:
+                # TODO
+                raise RuntimeError("NOT IMPLEMENTED")
+                # **event** : size of archive, type (emulator/sddrive), number of sides
+
+                # steps
+                # * for each disk side (a.k.a. 'unit')
+                #   * **event** : begin side 's' ('unit #s')
+                #   * seek to catalog (track 20, from sector 3 to 16)
+                #   * for each entry from the catalog (up to 8 entries per sector --> up to 112 entries for a side)
+                #     * IF entry is valid (not deleted, not empty,...)
+                #       * **event** : catalog entry
+                #   * **event** : done catalogue
+                #   * **event** : done side
+                # * **event** done archive
         return 0
