@@ -277,6 +277,7 @@ def extractBlockAllocationTableFromSector(
     usefullData = data[1:81]
     return [BlocAllocation(i, data[i]) for i in range(0, 80)]
 
+
 # ASSESS USEFULLNESS
 def extractCatalogEntriesFromSector(
     data: bytearray or bytes, bat: List[BlocAllocation]
@@ -313,6 +314,7 @@ def extractCatalogEntriesFromSector(
             )
         ]
     return result
+
 
 # ASSESS USEFULLNESS
 def extractCatalogFromTrack(
@@ -471,6 +473,7 @@ class DiskTrack:
             ] = sector.data
         return bytes(result)
 
+
 # ASSESS USEFULLNESS
 class DiskSide:
     TRACKS_PER_SIDE = 80
@@ -508,4 +511,21 @@ class DiskSide:
     def tracks(self):
         return [self._tracks[i] for i in range(DiskSide.TRACKS_PER_SIDE)]
 
-class D
+
+class DiskImage:
+    def __init__(
+        self,
+        rawData: bytearray or bytes = bytes(),
+        *,
+        typeOfDiskImage: TypeOfDiskImage = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE,
+    ):
+        # * whether it is an emulator or sddrive image
+        #   * check length validity (emulator : integer multiple of base size ; sddrive : fixed size)
+        #   * assess number of side (emulator : 2 or 4 ; sddrive : 4 )
+        #   * instanciate each disk sides
+
+        pass
+
+    @property
+    def sides(self) -> List[DiskSide]:
+        return []
