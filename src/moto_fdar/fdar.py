@@ -38,51 +38,6 @@ class DiskArchiveCliListener:
         """
         self.operation = operation
         self.verbose = verbose
-        self.blockIndex = 0
-
-    def onBeginFileBlock(self, descriptor: LeaderDiskBlockDescriptor):
-        self.blockIndex += 1
-        self.currentFile = descriptor
-        self.blockCount = 0
-        self.fileSize = 0
-        self.firstBlock = self.blockIndex
-
-    def onDataBlock(self, block: DiskBlock):
-        self.blockIndex += 1
-        self.blockCount += 1
-        self.fileSize += len(block.body)
-
-    def onEndBlock(self):
-        self.blockIndex += 1
-        if self.verbose:
-            # verbose mode
-            desc = self.currentFile
-            fileType = (
-                "BASIC"
-                if desc.fileType == 0
-                else "DATA"
-                if desc.fileType == 1
-                else "BINARY"
-            )
-            fileMode = desc.fileMode
-            if desc.fileType == 0:
-                fileMode = "ASCII" if fileMode == 0xFFFF else "TOKEN"
-            print(
-                f"{desc.fileName}.{desc.fileExtension}\t{fileType}\t{fileMode}\t#{self.firstBlock}\t{self.fileSize} octets\t{self.blockCount} blocks."
-            )
-        elif len(self.operation) == 0:
-            # non verbose list
-            desc = self.currentFile
-            print(f"{desc.fileName}.{desc.fileExtension}")
-        self.currentFile = None
-
-    def onError(self, message: str):
-        desc = self.currentFile
-        print(
-            f"Error : {message}"
-            if desc is None
-            else f"Error on {desc.fileName}.{desc.fileExtension} : {message}"
-        )
 
 
 class DiskArchiveCli:
@@ -117,14 +72,14 @@ If not, see <https://www.gnu.org/licenses/>. 
         # Add the arguments
         parser.add_argument(
             "archive",
-            metavar="<archive.fd or archive.sd>",
+            metavar="<archive.fd>",
             type=str,
             help="the designated disk archive",
         )
 
         parser.add_argument(
             "sources",
-            metavar="<source file>",
+            metavar="<source files...>",
             type=str,
             nargs="*",
             help="a list of source files",
@@ -159,7 +114,14 @@ If not, see <https://www.gnu.org/licenses/>. 
 
         parser.add_argument(
             "--into",
-            help="directory where output files will be generated.",
+            metavar="<directory>",
+            help="Directory where output files will be generated.",
+        )
+
+        parser.add_argument(
+            "--reference",
+            metavar="<ref_archive.fd>",
+            help="The archive will created starting from a duplicate of the reference archive ; source files will be added to that duplicate.",
         )
         return parser
 
@@ -173,14 +135,37 @@ If not, see <https://www.gnu.org/licenses/>. 
             "adding" if args.create else "extracting" if args.extract else "",
             args.verbose,
         )
+        ### assess type of archive
+        archive = args.archive
+        dotPos = archive.rfind(".")
+        if dotPos < 0:
+            raise ValueError(
+                f"'{archive}' MUST have an extension, either '.fd' or '.sd'."
+            )
+        archiveExtension = archive[dotPos + 1 :].lower()
+        typeOfArchive = None
+        if archiveExtension == "sd":
+            typeOfArchive = TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+        elif archiveExtension == "fd":
+            typeOfArchive = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+        else:
+            raise ValueError(
+                f"'{archive}' MUST have an extension, either '.fd' or '.sd'."
+            )
+
+        ### process target folder
+        hasTargetDirectory = False
+        if len(args.into) > 0:
+            print(f"has into : {args.into}")
+            # TODO
+
         if args.create:
-            disk = Disk()
+            # TODO prepare working file -- optionnally using a reference archive file
             for src in sources:
                 dotPos = src.rfind(".")
                 fileName = os.path.basename(src.upper())
                 fileExtension = ""
-                fileType = 2  # binary
-                fileMode = 0
+                fileType = TypeOfDiskFile.BASIC_DATA
                 if dotPos > -1:
                     fileName = os.path.basename(src[0:dotPos].upper())
                     if len(fileName) > 8:
@@ -196,63 +181,22 @@ If not, see <https://www.gnu.org/licenses/>. 
                     elif fileType == "LST":
                         # TODO converts on the fly into ASCII BAS ?
                         pass
-                    elif fileExtension == "CSV":
-                        # TODO check the actual format (separator 0xD ? )
-                        fileType = 1  # TODO check that file created by basic file commands have type 1 / data
-                leadBloc = LeaderDiskBlockDescriptor(
-                    fileName, fileExtension, fileType, fileMode
-                )
+                    # TODO other things ?
                 try:
-                    disk.writeBlock(leadBloc.toDiskBlock())
-                    listener.onBeginFileBlock(leadBloc)
-                    with open(src, "rb") as f:
-                        data = f.read()
-                    dataPos = 0
-                    dataMax = len(data)
-                    dataRemaining = dataMax
-                    while dataPos < dataMax:
-                        dataNextPos = (
-                            dataPos + dataRemaining
-                            if dataRemaining < 254
-                            else dataPos + 254
-                        )
-                        block = DiskBlock.buildFromData(data[dataPos:dataNextPos])
-                        disk.writeBlock(block)
-                        listener.onDataBlock(block)
-                        dataPos = dataNextPos
-                        dataRemaining = dataMax - dataPos
-                    disk.writeBlock(DiskBlock.buildFromData(None, TypeOfDiskBlock.EOF))
-                    listener.onEndBlock()
+                    # TODO write file into blocs
+                    # TODO commit file into FAT and CATALOG
+                    raise OverflowError("WRITE NOT IMPLEMENTED")
                 except OverflowError:
                     print("Too much data, abort creation.")
                     return 1
-            with open(args.archive, "wb") as tar:
-                tar.write(disk.rawData)
+            with open(args.archive, "wb") as fdar:
+                fdar.write(disk.rawData)
 
         elif args.list or args.extract:
-            with open(args.archive, "rb") as tar:
-                disk = Disk(tar.read())
-            targetDir = os.path.dirname(args.archive)
-            block = disk.nextBlock()
-            while block is not None:
-                if block.type == TypeOfDiskBlock.LEADER:
-                    desc = LeaderDiskBlockDescriptor.buildFromDiskBlock(block.rawData)
-                    listener.onBeginFileBlock(desc)
-                    if args.extract:
-                        fileContent = bytearray()  # initialize accumulator
-                elif block.type == TypeOfDiskBlock.EOF:
-                    if args.extract:
-                        with open(
-                            os.path.join(
-                                targetDir, f"{desc.fileName}.{desc.fileExtension}"
-                            ),
-                            "wb",
-                        ) as f:
-                            f.write(fileContent)
-                    listener.onEndBlock()
-                else:
-                    listener.onDataBlock(block)
-                    if args.extract:
-                        fileContent += block.body  # update accumulator
-                block = disk.nextBlock()
+            with open(args.archive, "rb") as fdar:
+                # TODO
+                raise RuntimeError("LOAD NOT IMPLEMENTED")
+            targetDir = (
+                args.into if hasTargetDirectory else os.path.dirname(args.archive)
+            )
         return 0

@@ -20,11 +20,11 @@ If not, see <https://www.gnu.org/licenses/>. 
 """
 import sys
 
-from .fdar import TapeArchiveCli
+from .fdar import DiskArchiveCli
 
 
 def main():
-    sys.exit(TapeArchiveCli().run())
+    sys.exit(DiskArchiveCli().run())
 
 
 if __name__ == "__main__":
