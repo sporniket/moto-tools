@@ -531,22 +531,15 @@ class DiskImage:
         #   * instanciate each disk sides
         self._sides = sides = [] # TODO
         startPoint = 0
-        self._logs = logs = ["Instanciating..."]
-        try:
-            for i in range(0,4): #up to 4 sides should be instantiated
-                sides.append(DiskSide(rawData[startPoint:], typeOfDiskImage))
-                startPoint = startPoint + sides[i].size
-                logs.append(f"Retrieved disk side #{i}")
-            pass
 
-            numberOfSides = len(sides)
-            if typeOfDiskImage == TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE and numberOfSides < 4:
-                raise ValueError(f"SDDrive images MUST embed 4 disk sides, got {numberOfSides}.")
+        for i in range(0,4): #up to 4 sides should be instantiated
+            sides.append(DiskSide(rawData[startPoint:], typeOfDiskImage))
+            startPoint = startPoint + sides[i].size
+        pass
 
-            self._logs = None # Can clear logs when all is done
-
-        except ValueError as error:
-            logs.append(error)
+        numberOfSides = len(sides)
+        if typeOfDiskImage == TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE and numberOfSides < 4:
+            raise ValueError(f"SDDrive images MUST embed 4 disk sides, got {numberOfSides}.")
 
     @property
     def sides(self) -> List[DiskSide]:
