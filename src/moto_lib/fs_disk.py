@@ -476,6 +476,8 @@ class DiskTrack:
 
 # ASSESS USEFULLNESS
 class DiskSide:
+    # expected size of a side depending of the type of disk image
+    SIZE_OF_SIDE = [327680, 655360]
     TRACKS_PER_SIDE = 80
 
     @staticmethod
@@ -510,6 +512,10 @@ class DiskSide:
     @property
     def tracks(self):
         return [self._tracks[i] for i in range(DiskSide.TRACKS_PER_SIDE)]
+    
+    @property
+    def size(self):
+        return self._sizeOfSide
 
 
 class DiskImage:
@@ -523,9 +529,25 @@ class DiskImage:
         #   * check length validity (emulator : integer multiple of base size ; sddrive : fixed size)
         #   * assess number of side (emulator : 2 or 4 ; sddrive : 4 )
         #   * instanciate each disk sides
+        self._sides = sides = [] # TODO
+        startPoint = 0
+        self._logs = logs = ["Instanciating..."]
+        try:
+            for i in range(0,4): #up to 4 sides should be instantiated
+                sides.append(DiskSide(rawData[startPoint:], typeOfDiskImage))
+                startPoint = startPoint + sides[i].size
+                logs.append(f"Retrieved disk side #{i}")
+            pass
 
-        pass
+            numberOfSides = len(sides)
+            if typeOfDiskImage == TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE and numberOfSides < 4:
+                raise ValueError(f"SDDrive images MUST embed 4 disk sides, got {numberOfSides}.")
+
+            self._logs = None # Can clear logs when all is done
+
+        except ValueError as error:
+            logs.append(error)
 
     @property
     def sides(self) -> List[DiskSide]:
-        return []
+        return self._sides
