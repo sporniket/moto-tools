@@ -289,76 +289,6 @@ _FILLER_SDDRIVE = 0xFF
 #### =====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====
 ## Extraction des données disques
 
-
-# ASSESS USEFULLNESS
-def extractBlockAllocationTableFromSector(
-    data: bytearray or bytes,
-) -> List[BlocAllocation]:
-    usefullData = data[1:81]
-    return [BlocAllocation(i, data[i]) for i in range(0, 80)]
-
-
-# ASSESS USEFULLNESS
-def extractCatalogEntriesFromSector(
-    data: bytearray or bytes, bat: List[BlocAllocation]
-) -> List[CatalogEntry]:
-    usefullData = data[0:256]
-    result = []
-    for i in range(0, 256, 32):
-        entryData = usefullData[
-            i : i + 16
-        ]  # the last 16 bytes of a 32-bytes long slice are unused
-        if entryData[0] == 0xFF:
-            continue
-        # build the list of occupied blocks
-        firstBlock = entryData[13]
-        blockchain = [firstBlock]
-        currentBlock = firstBlock
-        while bat[currentBlock].hasNext:
-            currentBlock = bat[bat[currentBlock].status]
-            if currentBlock.id in [b.id for b in blockchain]:
-                # TODO emit error event
-                break  # loop detected
-            if currentBlock.free:
-                # TODO emit error event
-                break  #
-            blockchain += [currentBlock]
-        result += [
-            CatalogEntry(
-                NameOfFile(entryData[0:8], entryData[8:11]),
-                TypeOfDiskFile.fromInt(entryData[11]),
-                TypeOfData.fromInt(entryData[12]),
-                firstBlock,
-                blockchain,
-                entryData[14] * 256 + entryData[15],
-            )
-        ]
-    return result
-
-
-# ASSESS USEFULLNESS
-def extractCatalogFromTrack(
-    data: bytearray or bytes,
-    typeOfDiskImage: TypeOfDiskImage = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE,
-):
-    intervalOfSlice = typeOfDiskImage.sizeOfSector()
-    # extract BAT
-    bat = extractBlockAllocationTableFromSector(
-        data[intervalOfSlice : intervalOfSlice + 256]
-    )
-
-    # extract catalog entries.
-    catalog = []
-    for i in range(2, 16):
-        startOfSector = i * intervalOfSlice
-        catalog += extractCatalogEntriesFromSector(
-            data[startOfSector : startOfSector + 256], bat
-        )
-
-    return (bat, catalog)
-
-
-# ASSESS USEFULLNESS
 class DiskSector:
     ###
     # We will work either with Double Density sectors, or SDDrive sectors
@@ -465,8 +395,6 @@ class DiskSector:
             ]
         return result
 
-
-# ASSESS USEFULLNESS
 class DiskTrack:
     SECTORS_PER_TRACK = 16
 
@@ -527,7 +455,6 @@ class DiskTrack:
         return bytes(result)
 
 
-# ASSESS USEFULLNESS
 class DiskSide:
     # expected size of a side depending of the type of disk image
     SIZE_OF_SIDE = [327680, 655360]
