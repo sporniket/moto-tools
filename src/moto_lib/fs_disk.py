@@ -22,12 +22,7 @@ If not, see <https://www.gnu.org/licenses/>. 
 from enum import Enum
 from typing import List
 
-TYPE_OF_FILE_AS_STRING = ["B", "D", "M", "A"]
-TYPE_OF_FILE_AS_CATALOG_STRING = ["BASIC", "DATA", "MODULE", "TEXT"]
-TYPE_OF_DATA_AS_CATALOG_STRING = ["BINARY", "ASCII"]
-TYPE_OF_DATA_AS_CATALOG_STRING_WHEN_BASIC = ["TOKEN", "ASCII"]
 
-_CHAR_TO_INT_MAP = {"B": 0, "D": 1, "M": 2, "A": 3}
 
 
 class TypeOfDiskImage(Enum):
@@ -42,6 +37,10 @@ class TypeOfDiskImage(Enum):
         return 256 if self == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE else 512
 
 
+TYPE_OF_FILE_AS_CHAR = ["B", "D", "M", "A"]
+TYPE_OF_FILE_AS_CATALOG_STRING = ["BASIC", "DATA", "MODULE", "TEXT"]
+TYPE_OF_FILE_CHAR_TO_INT_MAP = {"B": 0, "D": 1, "M": 2, "A": 3}
+
 class TypeOfDiskFile(Enum):
     BASIC_PROGRAM = 0
     BASIC_DATA = 1
@@ -54,18 +53,23 @@ class TypeOfDiskFile(Enum):
 
     @classmethod
     def fromCharacterCode(cls, value: str):
-        if value not in TYPE_OF_FILE_AS_STRING:
+        if value not in TYPE_OF_FILE_AS_CHAR:
             raise ValueError(f"Unknown character code '{value}'")
-        return cls(_CHAR_TO_INT_MAP[value])
+        return cls(TYPE_OF_FILE_CHAR_TO_INT_MAP[value])
 
     def asCharacterCode(self) -> str:
-        return TYPE_OF_FILE_AS_STRING[self.value]
+        return TYPE_OF_FILE_AS_CHAR[self.value]
 
     def asByte(self) -> int:
         return self.value
 
 
 # ASSESS USEFULLNESS
+TYPE_OF_DATA_AS_CHAR = ["B", "A"]
+TYPE_OF_DATA_AS_CATALOG_STRING = ["BINARY", "ASCII"]
+TYPE_OF_DATA_AS_CATALOG_STRING_WHEN_BASIC = ["TOKEN", "ASCII"]
+TYPE_OF_DATA_CHAR_TO_INT_MAP = {"B":0,"A":1}
+
 class TypeOfData(Enum):
     BINARY_DATA = 0
     ASCII_DATA = 1
@@ -73,6 +77,16 @@ class TypeOfData(Enum):
     @classmethod
     def fromInt(cls, value: int):
         return cls(value)
+
+    @classmethod
+    def fromByte(cls, value: int):
+        return TypeOfData.BINARY_DATA if value == 0 else TypeOfData.ASCII_DATA
+
+    @classmethod
+    def fromCharacterCode(cls, value: str):
+        if value not in TYPE_OF_DATA_AS_CHAR:
+            raise ValueError(f"Unknown character code '{value}'")
+        return cls(TYPE_OF_DATA_CHAR_TO_INT_MAP[value])
 
     def asCharacterCode(self) -> str:
         return "B" if self.value == 0 else "A"
@@ -230,7 +244,6 @@ class BlockStatus(Enum):
     FREE = 0xFF
 
 
-# ASSESS USEFULLNESS
 class BlocAllocation:
     def __init__(self, id: int, status: int = BlockStatus.FREE.value):
         if id < BlockStatus.MIN_NEXT.value or id >= BlockStatus.MAX_NEXT.value:
@@ -265,6 +278,13 @@ class BlocAllocation:
         )
         self.hasNext = status < BlockStatus.MAX_NEXT
 
+
+
+######################################################## BEGIN HERE
+# private shorthand values
+_SIZE_OF_SECTOR_DD = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE.sizeOfSector()
+_SIZE_OF_SECTOR_SDDRIVE = TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE.sizeOfSector()
+_FILLER_SDDRIVE = 0xFF
 
 #### =====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====
 ## Extraction des données disques
@@ -338,13 +358,6 @@ def extractCatalogFromTrack(
     return (bat, catalog)
 
 
-######################################################## BEGIN HERE
-# private shorthand values
-_SIZE_OF_SECTOR_DD = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE.sizeOfSector()
-_SIZE_OF_SECTOR_SDDRIVE = TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE.sizeOfSector()
-_FILLER_SDDRIVE = 0xFF
-
-
 # ASSESS USEFULLNESS
 class DiskSector:
     ###
@@ -411,6 +424,46 @@ class DiskSector:
         self._data[:] = bytearray(
             [DiskSector.FILLER_FDDRIVE for i in range(self._sizeOfPayload)]
         )
+
+    def asBlockAllocationTable(self) -> List[BlocAllocation]:
+        usefullData = self._data[1:81]
+        return [BlocAllocation(i, usefullData[i]) for i in range(0, 80)]
+
+    def asCatalogEntries(
+        self, bat: List[BlocAllocation]
+    ) -> List[CatalogEntry]:
+        usefullData = self._data[0:DiskSector.SIZE_OF_SECTOR_DD]
+        result = []
+        for i in range(0, DiskSector.SIZE_OF_SECTOR_DD, 32):
+            entryData = usefullData[
+                i : i + 16
+            ]  # the last 16 bytes of a 32-bytes long slice are unused
+            if entryData[0] == 0xFF:
+                continue
+            # build the list of occupied blocks
+            firstBlock = entryData[13]
+            blockchain = [firstBlock]
+            currentBlock = firstBlock
+            while bat[currentBlock].hasNext:
+                currentBlock = bat[bat[currentBlock].status]
+                if currentBlock.id in [b.id for b in blockchain]:
+                    # TODO emit error event
+                    break  # loop detected
+                if currentBlock.free:
+                    # TODO emit error event
+                    break  #
+                blockchain += [currentBlock]
+            result += [
+                CatalogEntry(
+                    NameOfFile(entryData[0:8], entryData[8:11]),
+                    TypeOfDiskFile.fromInt(entryData[11]),
+                    TypeOfData.fromInt(entryData[12]),
+                    firstBlock,
+                    blockchain,
+                    entryData[14] * 256 + entryData[15],
+                )
+            ]
+        return result
 
 
 # ASSESS USEFULLNESS
@@ -508,6 +561,12 @@ class DiskSide:
             raise ValueError(
                 f"Non empty rawData should have a length of {_sizeOfSide} bytes for {typeOfDiskImage.name}, got {dataSize}"
             )
+        
+        # scan Block Allocation Table and catalog
+        self._bat = tracks[20].sectors[1].asBlockAllocationTable()
+        self._catalog = []
+        for i in range(2,16):
+            self._catalog += tracks[20].sectors[i].asCatalogEntries(self._bat)
 
     @property
     def tracks(self):
@@ -516,6 +575,12 @@ class DiskSide:
     @property
     def size(self):
         return self._sizeOfSide
+
+    @property
+    def listOfFiles(self)->List[str]:
+        length = len(self._catalog)
+        return [self._catalog[i].line_catalogue for i in range(0,length)] if length > 0 else []
+
 
 
 class DiskImage:
