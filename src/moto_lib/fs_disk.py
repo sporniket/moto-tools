@@ -108,14 +108,6 @@ class NameOfFile:
                 0x20,
                 0x20,
                 0x20,
-                0x20,
-                0x20,
-                0x20,
-                0x20,
-                0x20,
-                0x20,
-                0x20,
-                0x20,
             ]
         )
         self._suffix = bytearray([0x20, 0x20, 0x20])
@@ -214,11 +206,11 @@ class CatalogEntry:
     # to refactor into a rendering framework
     @property
     def line_catalogue(self) -> str:
-        nameColumn = (self.name.namedot + "            ")[0:13]
+        nameColumn = self.name.name8dot3  # (self.name.namedot + "            ")[0:13]
         typeOfFile = TYPE_OF_FILE_AS_CATALOG_STRING[self.typeOfFile.value]
         typeOfData = (
             TYPE_OF_DATA_AS_CATALOG_STRING_WHEN_BASIC[self.typeOfData.value]
-            if self.typeOfData == TypeOfData.BASIC_PROGRAM
+            if self.typeOfFile == TypeOfDiskFile.BASIC_PROGRAM
             else TYPE_OF_DATA_AS_CATALOG_STRING[self.typeOfData.value]
         )
         numberOfBlocks = len(self.blockchain)
@@ -227,9 +219,9 @@ class CatalogEntry:
             + 256 * (self.usageOfLastBlock - 1)
             + self.usageOfLastSector
         )
-        fmtdSizeOfFile = (f"       {sizeOfFile} octets")[-20:]
-        fmtdNumberOfBlocks = (f"    {numberOfBlocks} blocs")[-10:]
-        return f"{nameColumn}\t{typeOfFile}\t{typeOfData}\t#{self.firstBlock}\t{fmtdSizeOfFile}{fmtdNumberOfBlocks}"
+        fmtdSizeOfFile = (f" {sizeOfFile:10} octets")[-20:]
+        fmtdNumberOfBlocks = (f" {numberOfBlocks:3} blocs")[-10:]
+        return f"{nameColumn}\t{typeOfFile}\t{typeOfData}\t#{self.firstBlock.id:3}\t{fmtdSizeOfFile}{fmtdNumberOfBlocks}"
 
 
 # ASSESS USEFULLNESS
@@ -237,7 +229,7 @@ class BlockStatus(Enum):
     """A list of values to be used as range limit or special values."""
 
     MIN_NEXT = 0
-    MAX_NEXT = 80
+    MAX_NEXT = 160  # For 80 tracks
     LAST_BLOCK = 192  # 0b11000000
     MIN_LAST = 193
     MAX_LAST = 201
@@ -336,18 +328,13 @@ class DiskSector:
             )
             self._data[: len(rawData)] = rawData
         else:
-            hexdump1 = " ".join("{:02x}".format(x) for x in rawData[:16])
-            hexdump2 = " ".join("{:02x}".format(x) for x in rawData[16:32])
-            print("sectors will start with ")
-            print(hexdump1)
-            print(hexdump2)
             self._data = bytearray(rawData[: self._sizeOfPayload])
 
     @property
     def data(self) -> bytes:
         return (
             bytes(self._data)
-            if self.typeOfDiskImage == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            if self._typeOfDiskImage == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
             else bytes(self._data + self._padding)
         )
 
@@ -365,25 +352,25 @@ class DiskSector:
         )
 
     def asBlockAllocationTable(self) -> List[BlocAllocation]:
-        usefullData = self._data[1:81]
-        return [BlocAllocation(i, usefullData[i]) for i in range(0, 80)]
+        usefullData = self._data[1:161]
+        return [BlocAllocation(i, usefullData[i]) for i in range(0, 160)]
 
     def asCatalogEntries(self, bat: List[BlocAllocation]) -> List[CatalogEntry]:
         usefullData = self._data[0 : DiskSector.SIZE_OF_SECTOR_DD]
         result = []
         for i in range(0, DiskSector.SIZE_OF_SECTOR_DD, 32):
-            print(f"scanning from offset @{i}...")
             entryData = usefullData[
                 i : i + 16
             ]  # the last 16 bytes of a 32-bytes long slice are unused
             if entryData[0] == 0xFF:
                 continue
             # build the list of occupied blocks
-            firstBlock = entryData[13]
+            firstBlockId = entryData[13]
+            firstBlock = bat[firstBlockId]
             blockchain = [firstBlock]
             currentBlock = firstBlock
-            while bat[currentBlock].hasNext:
-                currentBlock = bat[bat[currentBlock].status]
+            while currentBlock.hasNext:
+                currentBlock = bat[currentBlock.status]
                 if currentBlock.id in [b.id for b in blockchain]:
                     # TODO emit error event
                     break  # loop detected
@@ -395,9 +382,10 @@ class DiskSector:
                 CatalogEntry(
                     NameOfFile(entryData[0:8], entryData[8:11]),
                     TypeOfDiskFile.fromInt(entryData[11]),
-                    TypeOfData.fromInt(entryData[12]),
+                    TypeOfData.fromByte(entryData[12]),
                     firstBlock,
                     blockchain,
+                    currentBlock.usage,
                     entryData[14] * 256 + entryData[15],
                 )
             ]
@@ -491,7 +479,10 @@ class DiskSide:
             ]
         elif dataSize >= _sizeOfSide:
             self._tracks = [
-                DiskTrack(rawData[i * _sizeOfTrack : (i + 1) * _sizeOfTrack])
+                DiskTrack(
+                    rawData[i * _sizeOfTrack : (i + 1) * _sizeOfTrack],
+                    typeOfDiskImage=typeOfDiskImage,
+                )
                 for i in range(DiskSide.TRACKS_PER_SIDE)
             ]
         else:
@@ -503,7 +494,6 @@ class DiskSide:
         self._bat = self._tracks[20].sectors[1].asBlockAllocationTable()
         self._catalog = []
         for i in range(2, 16):
-            print(f"Extracting catalog from sector #{i}...")
             self._catalog += self._tracks[20].sectors[i].asCatalogEntries(self._bat)
 
     @property
@@ -539,7 +529,6 @@ class DiskImage:
         startPoint = 0
 
         for i in range(0, 4):  # up to 4 sides should be instantiated
-            print(f"Instanciating side #{i}...")
             sides.append(DiskSide(rawData[startPoint:], typeOfDiskImage))
             startPoint = startPoint + sides[i].size
         pass
