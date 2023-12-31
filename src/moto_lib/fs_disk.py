@@ -23,8 +23,6 @@ from enum import Enum
 from typing import List
 
 
-
-
 class TypeOfDiskImage(Enum):
     EMULATOR_FLOPPY_IMAGE = 0
     SDDRIVE_FLOPPY_IMAGE = 1
@@ -40,6 +38,7 @@ class TypeOfDiskImage(Enum):
 TYPE_OF_FILE_AS_CHAR = ["B", "D", "M", "A"]
 TYPE_OF_FILE_AS_CATALOG_STRING = ["BASIC", "DATA", "MODULE", "TEXT"]
 TYPE_OF_FILE_CHAR_TO_INT_MAP = {"B": 0, "D": 1, "M": 2, "A": 3}
+
 
 class TypeOfDiskFile(Enum):
     BASIC_PROGRAM = 0
@@ -68,7 +67,8 @@ class TypeOfDiskFile(Enum):
 TYPE_OF_DATA_AS_CHAR = ["B", "A"]
 TYPE_OF_DATA_AS_CATALOG_STRING = ["BINARY", "ASCII"]
 TYPE_OF_DATA_AS_CATALOG_STRING_WHEN_BASIC = ["TOKEN", "ASCII"]
-TYPE_OF_DATA_CHAR_TO_INT_MAP = {"B":0,"A":1}
+TYPE_OF_DATA_CHAR_TO_INT_MAP = {"B": 0, "A": 1}
+
 
 class TypeOfData(Enum):
     BINARY_DATA = 0
@@ -211,6 +211,7 @@ class CatalogEntry:
     def valid_name(self):
         return self.name.overflow is False
 
+    # to refactor into a rendering framework
     @property
     def line_catalogue(self) -> str:
         nameColumn = (self.name.namedot + "            ")[0:13]
@@ -256,7 +257,10 @@ class BlocAllocation:
                 status >= BlockStatus.MAX_NEXT.value
                 and status < BlockStatus.MIN_LAST.value
             )
-            or (status >= BlockStatus.MAX_LAST and status < BlockStatus.RESERVED)
+            or (
+                status >= BlockStatus.MAX_LAST.value
+                and status < BlockStatus.RESERVED.value
+            )
             or (status > BlockStatus.FREE.value)
         ):
             raise ValueError(
@@ -271,13 +275,12 @@ class BlocAllocation:
         )
         self.usage = (
             8
-            if status < BlockStatus.MAX_NEXT
+            if status < BlockStatus.MAX_NEXT.value
             else status - BlockStatus.LAST_BLOCK.value
             if self.isLastBlock
             else 0
         )
-        self.hasNext = status < BlockStatus.MAX_NEXT
-
+        self.hasNext = status < BlockStatus.MAX_NEXT.value
 
 
 ######################################################## BEGIN HERE
@@ -288,6 +291,7 @@ _FILLER_SDDRIVE = 0xFF
 
 #### =====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====---=====
 ## Extraction des données disques
+
 
 class DiskSector:
     ###
@@ -332,6 +336,11 @@ class DiskSector:
             )
             self._data[: len(rawData)] = rawData
         else:
+            hexdump1 = " ".join("{:02x}".format(x) for x in rawData[:16])
+            hexdump2 = " ".join("{:02x}".format(x) for x in rawData[16:32])
+            print("sectors will start with ")
+            print(hexdump1)
+            print(hexdump2)
             self._data = bytearray(rawData[: self._sizeOfPayload])
 
     @property
@@ -359,12 +368,11 @@ class DiskSector:
         usefullData = self._data[1:81]
         return [BlocAllocation(i, usefullData[i]) for i in range(0, 80)]
 
-    def asCatalogEntries(
-        self, bat: List[BlocAllocation]
-    ) -> List[CatalogEntry]:
-        usefullData = self._data[0:DiskSector.SIZE_OF_SECTOR_DD]
+    def asCatalogEntries(self, bat: List[BlocAllocation]) -> List[CatalogEntry]:
+        usefullData = self._data[0 : DiskSector.SIZE_OF_SECTOR_DD]
         result = []
         for i in range(0, DiskSector.SIZE_OF_SECTOR_DD, 32):
+            print(f"scanning from offset @{i}...")
             entryData = usefullData[
                 i : i + 16
             ]  # the last 16 bytes of a 32-bytes long slice are unused
@@ -395,6 +403,7 @@ class DiskSector:
             ]
         return result
 
+
 class DiskTrack:
     SECTORS_PER_TRACK = 16
 
@@ -421,9 +430,10 @@ class DiskTrack:
         elif dataSize >= _sizeOfTrack:
             self._sectors = [
                 DiskSector(
-                    rawData[(i * _sizeOfSector) : ((i + 1) * _sizeOfSector)]
-                    for i in range(DiskTrack.SECTORS_PER_TRACK)
+                    rawData[(i * _sizeOfSector) : ((i + 1) * _sizeOfSector)],
+                    typeOfDiskImage=typeOfDiskImage,
                 )
+                for i in range(DiskTrack.SECTORS_PER_TRACK)
             ]
         else:
             raise ValueError(
@@ -481,33 +491,37 @@ class DiskSide:
             ]
         elif dataSize >= _sizeOfSide:
             self._tracks = [
-                DiskSector(rawData[i * _sizeOfTrack : (i + 1) * _sizeOfTrack])
+                DiskTrack(rawData[i * _sizeOfTrack : (i + 1) * _sizeOfTrack])
                 for i in range(DiskSide.TRACKS_PER_SIDE)
             ]
         else:
             raise ValueError(
                 f"Non empty rawData should have a length of {_sizeOfSide} bytes for {typeOfDiskImage.name}, got {dataSize}"
             )
-        
+
         # scan Block Allocation Table and catalog
-        self._bat = tracks[20].sectors[1].asBlockAllocationTable()
+        self._bat = self._tracks[20].sectors[1].asBlockAllocationTable()
         self._catalog = []
-        for i in range(2,16):
-            self._catalog += tracks[20].sectors[i].asCatalogEntries(self._bat)
+        for i in range(2, 16):
+            print(f"Extracting catalog from sector #{i}...")
+            self._catalog += self._tracks[20].sectors[i].asCatalogEntries(self._bat)
 
     @property
     def tracks(self):
         return [self._tracks[i] for i in range(DiskSide.TRACKS_PER_SIDE)]
-    
+
     @property
     def size(self):
         return self._sizeOfSide
 
     @property
-    def listOfFiles(self)->List[str]:
+    def listOfFiles(self) -> List[str]:
         length = len(self._catalog)
-        return [self._catalog[i].line_catalogue for i in range(0,length)] if length > 0 else []
-
+        return (
+            [self._catalog[i].line_catalogue for i in range(0, length)]
+            if length > 0
+            else []
+        )
 
 
 class DiskImage:
@@ -521,17 +535,23 @@ class DiskImage:
         #   * check length validity (emulator : integer multiple of base size ; sddrive : fixed size)
         #   * assess number of side (emulator : 2 or 4 ; sddrive : 4 )
         #   * instanciate each disk sides
-        self._sides = sides = [] # TODO
+        self._sides = sides = []  # TODO
         startPoint = 0
 
-        for i in range(0,4): #up to 4 sides should be instantiated
+        for i in range(0, 4):  # up to 4 sides should be instantiated
+            print(f"Instanciating side #{i}...")
             sides.append(DiskSide(rawData[startPoint:], typeOfDiskImage))
             startPoint = startPoint + sides[i].size
         pass
 
         numberOfSides = len(sides)
-        if typeOfDiskImage == TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE and numberOfSides < 4:
-            raise ValueError(f"SDDrive images MUST embed 4 disk sides, got {numberOfSides}.")
+        if (
+            typeOfDiskImage == TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            and numberOfSides < 4
+        ):
+            raise ValueError(
+                f"SDDrive images MUST embed 4 disk sides, got {numberOfSides}."
+            )
 
     @property
     def sides(self) -> List[DiskSide]:
