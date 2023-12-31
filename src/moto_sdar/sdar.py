@@ -139,9 +139,7 @@ If not, see <https://www.gnu.org/licenses/>. 
         archive = args.archive
         dotPos = archive.rfind(".")
         if dotPos < 0:
-            raise ValueError(
-                f"'{archive}' MUST have an extension '.sd'."
-            )
+            raise ValueError(f"'{archive}' MUST have an extension '.sd'.")
         archiveExtension = archive[dotPos + 1 :].lower()
         typeOfArchive = None
         if archiveExtension == "sd":
@@ -149,13 +147,11 @@ If not, see <https://www.gnu.org/licenses/>. 
         elif archiveExtension == "fd":
             typeOfArchive = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         else:
-            raise ValueError(
-                f"'{archive}' MUST have an extension '.sd'."
-            )
+            raise ValueError(f"'{archive}' MUST have an extension '.sd'.")
 
         ### process target folder
         hasTargetDirectory = False
-        if len(args.into) > 0:
+        if args.into is not None:
             print(f"has into : {args.into}")
             # TODO
 
@@ -203,12 +199,17 @@ If not, see <https://www.gnu.org/licenses/>. 
         elif args.list:
             with open(args.archive, "rb") as sdar:
                 # TODO
-                disk = DiskImage(sdar, typeOfArchive=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE)
+                disk = DiskImage(
+                    sdar.read(), typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+                )
                 # **event** : size of archive, type (emulator/sddrive), number of sides
 
                 # steps
                 # * for each disk side (a.k.a. 'unit')
-                for side in disk.sides:
+                for i, side in enumerate(disk.sides):
+                    print(f"Side #{i}")
+                    for item in side.listOfFiles:
+                        print(item)
                     pass
                 #   * **event** : begin side 's' ('unit #s')
                 #   * seek to catalog (track 20, from sector 3 to 16)
@@ -218,5 +219,5 @@ If not, see <https://www.gnu.org/licenses/>. 
                 #   * **event** : done catalogue
                 #   * **event** : done side
                 # * **event** done archive
-                raise RuntimeError("NOT IMPLEMENTED")
+                # raise RuntimeError("NOT IMPLEMENTED")
         return 0
