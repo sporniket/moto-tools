@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
-from moto_lib import TypeOfDiskImage, TypeOfDiskFile
+from moto_lib import TypeOfDiskImage, TypeOfDiskFile, DiskTrack
 
 
 ######################################################## Test suite for TypeOfDiskImage
@@ -60,3 +60,36 @@ def then_TypeOfDiskFile_verify_expectations(
     assert TypeOfDiskFile.fromCharacterCode(charValue) == typeOfFile
     assert typeOfFile.asCharacterCode() == charValue
     assert typeOfFile.asByte() == intValue
+
+
+######################################################## Test suite for TypeOfDiskFile
+
+
+def test_DiskTrack_from_track_data_should_create_correct_sectors():
+    def createDummySector(
+        value: int,
+        typeOfDiskImage: TypeOfDiskImage = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE,
+    ):
+        if value < 0 or value > 0xFF:
+            raise ValueError("byte is between 0 and 255, got {value}.")
+        result = [value for i in range(256)]
+        if typeOfDiskImage == TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE:
+            result += [0xFF for i in range(256)]
+        return result
+
+    def createDummyTrack(
+        typeOfDiskImage: TypeOfDiskImage = TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE,
+    ):
+        sectorsData = [createDummySector(i, typeOfDiskImage) for i in range(16)]
+        result = [b for data in sectorsData for b in data]
+        return result
+
+    for t in [
+        TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE,
+        TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE,
+    ]:
+        track = DiskTrack(createDummyTrack(t), typeOfDiskImage=t)
+        for i, s in enumerate(track.sectors):
+            sdata = s.data
+            assert sdata[0] == i
+            assert sdata[255] == i
