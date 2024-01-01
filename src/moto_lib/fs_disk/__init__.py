@@ -30,6 +30,7 @@ __all__ = [
     "DiskSector",
     "DiskSide",
     "DiskTrack",
+    "DiskUnit",
     "NameOfFile",
     "TypeOfData",
     "TypeOfDiskFile",
