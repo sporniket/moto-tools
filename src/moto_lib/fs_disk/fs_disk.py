@@ -351,46 +351,6 @@ class DiskSector:
             [DiskSector.FILLER_FDDRIVE for i in range(self._sizeOfPayload)]
         )
 
-    def asBlockAllocationTable(self) -> List[BlocAllocation]:
-        usefullData = self._data[1:161]
-        return [BlocAllocation(i, usefullData[i]) for i in range(0, 160)]
-
-    def asCatalogEntries(self, bat: List[BlocAllocation]) -> List[CatalogEntry]:
-        usefullData = self._data[0 : DiskSector.SIZE_OF_SECTOR_DD]
-        result = []
-        for i in range(0, DiskSector.SIZE_OF_SECTOR_DD, 32):
-            entryData = usefullData[
-                i : i + 16
-            ]  # the last 16 bytes of a 32-bytes long slice are unused
-            if entryData[0] == 0xFF:
-                continue
-            # build the list of occupied blocks
-            firstBlockId = entryData[13]
-            firstBlock = bat[firstBlockId]
-            blockchain = [firstBlock]
-            currentBlock = firstBlock
-            while currentBlock.hasNext:
-                currentBlock = bat[currentBlock.status]
-                if currentBlock.id in [b.id for b in blockchain]:
-                    # TODO emit error event
-                    break  # loop detected
-                if currentBlock.free:
-                    # TODO emit error event
-                    break  #
-                blockchain += [currentBlock]
-            result += [
-                CatalogEntry(
-                    NameOfFile(entryData[0:8], entryData[8:11]),
-                    TypeOfDiskFile.fromInt(entryData[11]),
-                    TypeOfData.fromByte(entryData[12]),
-                    firstBlock,
-                    blockchain,
-                    currentBlock.usage,
-                    entryData[14] * 256 + entryData[15],
-                )
-            ]
-        return result
-
 
 class DiskTrack:
     SECTORS_PER_TRACK = 16
@@ -490,12 +450,6 @@ class DiskSide:
                 f"Non empty rawData should have a length of {_sizeOfSide} bytes for {typeOfDiskImage.name}, got {dataSize}"
             )
 
-        # scan Block Allocation Table and catalog
-        self._bat = self._tracks[20].sectors[1].asBlockAllocationTable()
-        self._catalog = []
-        for i in range(2, 16):
-            self._catalog += self._tracks[20].sectors[i].asCatalogEntries(self._bat)
-
     @property
     def tracks(self):
         return [self._tracks[i] for i in range(DiskSide.TRACKS_PER_SIDE)]
@@ -503,15 +457,6 @@ class DiskSide:
     @property
     def size(self):
         return self._sizeOfSide
-
-    @property
-    def listOfFiles(self) -> List[str]:
-        length = len(self._catalog)
-        return (
-            [self._catalog[i].line_catalogue for i in range(0, length)]
-            if length > 0
-            else []
-        )
 
 
 class DiskImage:
@@ -545,3 +490,68 @@ class DiskImage:
     @property
     def sides(self) -> List[DiskSide]:
         return self._sides
+
+
+class DiskUnit:
+    """A view of a DiskSide with the file organization of DOS"""
+
+    def __init__(self, diskSide: DiskSide):
+        # scan Block Allocation Table and catalog
+        track20 = diskSide.tracks[20].sectors
+        self._bat = self.blockAllocationTableFromSector(track20[1])
+        self._catalog = []
+        for i in range(2, 16):
+            self._catalog += self.catalogEntriesFromSector(track20[i], self._bat)
+
+    def blockAllocationTableFromSector(
+        self, sector: DiskSector
+    ) -> List[BlocAllocation]:
+        usefullData = sector.data[1:161]
+        return [BlocAllocation(i, usefullData[i]) for i in range(0, 160)]
+
+    def catalogEntriesFromSector(
+        self, sector: DiskSector, bat: List[BlocAllocation]
+    ) -> List[CatalogEntry]:
+        usefullData = sector.data[0 : DiskSector.SIZE_OF_SECTOR_DD]
+        result = []
+        for i in range(0, DiskSector.SIZE_OF_SECTOR_DD, 32):
+            entryData = usefullData[
+                i : i + 16
+            ]  # the last 16 bytes of a 32-bytes long slice are unused
+            if entryData[0] == 0xFF:
+                continue
+            # build the list of occupied blocks
+            firstBlockId = entryData[13]
+            firstBlock = bat[firstBlockId]
+            blockchain = [firstBlock]
+            currentBlock = firstBlock
+            while currentBlock.hasNext:
+                currentBlock = bat[currentBlock.status]
+                if currentBlock.id in [b.id for b in blockchain]:
+                    # TODO emit error event
+                    break  # loop detected
+                if currentBlock.free:
+                    # TODO emit error event
+                    break  #
+                blockchain += [currentBlock]
+            result += [
+                CatalogEntry(
+                    NameOfFile(entryData[0:8], entryData[8:11]),
+                    TypeOfDiskFile.fromInt(entryData[11]),
+                    TypeOfData.fromByte(entryData[12]),
+                    firstBlock,
+                    blockchain,
+                    currentBlock.usage,
+                    entryData[14] * 256 + entryData[15],
+                )
+            ]
+        return result
+
+    @property
+    def listOfFiles(self) -> List[str]:
+        length = len(self._catalog)
+        return (
+            [self._catalog[i].line_catalogue for i in range(0, length)]
+            if length > 0
+            else []
+        )
