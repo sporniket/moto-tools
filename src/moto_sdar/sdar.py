@@ -208,7 +208,8 @@ If not, see <https://www.gnu.org/licenses/>. 
                 # * for each disk side (a.k.a. 'unit')
                 for i, side in enumerate(disk.sides):
                     print(f"Side #{i}")
-                    for item in side.listOfFiles:
+                    unit = DiskUnit(side)
+                    for item in unit.listOfFiles:
                         print(item)
                     pass
                 #   * **event** : begin side 's' ('unit #s')
