@@ -20,5 +20,14 @@ If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
 from .fs_tape import *
+from .tokenizer import *
 
-__all__ = ["TypeOfTapeBlock", "TapeBlock", "Tape", "LeaderTapeBlockDescriptor"]
+__all__ = [
+    "TypeOfTapeBlock",
+    "TapeBlock",
+    "Tape",
+    "LeaderTapeBlockDescriptor",
+    "TokenizerContext",
+    "TokenizerPhase",
+    "TokenizerPhaseAutomaton",
+]

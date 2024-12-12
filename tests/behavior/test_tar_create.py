@@ -103,7 +103,6 @@ C5002.BAS\tBASIC\tTOKEN\t#25\t836 octets\t4 blocks.
 
 
 def test_that_it_fails_when_there_is_too_much_data():
-
     bigSourceFile = "big_18k.txt"
     tmp_dir = initializeTmpWorkspace(
         [os.path.join(source_dir, f) for f in [bigSourceFile]]
