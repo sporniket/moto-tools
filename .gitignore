@@ -1,11 +1,14 @@
-# START OF Special for this project
+#######<[ ADDITIONS TO BASE GITIGNORE ]>######
 tmp.*
-tests/data/mc_68000_plcc68.json
-# END OF Special for this project
+local.*
+# 
+
+# MacOS stuff
+.DS_Store
 
 # VSCode stuff
 .vscode/
-# ----
+##############################################
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
