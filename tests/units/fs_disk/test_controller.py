@@ -22,7 +22,112 @@ If not, see <https://www.gnu.org/licenses/>. 
 import pytest
 
 from moto_lib.fs_disk.controller import FileSystemController
-from moto_lib.fs_disk.image import DiskSide
+from moto_lib.fs_disk.image import DiskSide, DiskSector
+
+
+def copyBytes(fromBytes, toBytes, toStart):
+    _cursor = toStart
+    for b in fromBytes:
+        toBytes[_cursor] = b
+        _cursor = _cursor + 1
+
+
+def prepareBlocAllocationTable(target, index):
+    bat = bytearray([0xFF for i in range(256)])
+    # reserve block 0 (boot sector), 40 and 41 (track 20 hosting the bat and catalog)
+    for i in [0, 40, 41]:
+        bat[i] = 0xFE
+    # blocks 2->3->5, 3 sectors used on block 5
+    bat[2] = 3
+    bat[3] = 5
+    bat[5] = 195
+    # block 4, 1 sector used
+    bat[4] = 193
+    # blocks 6->7, 8 sectors used on block 7
+    bat[6] = 7
+    bat[7] = 200
+    # blocks 8->9->10->11->12->13->14, 3 sectors used on block 14
+    bat[8] = 9
+    bat[9] = 10
+    bat[10] = 11
+    bat[11] = 12
+    bat[12] = 13
+    bat[13] = 14
+    bat[14] = 195
+    copyBytes(bat, target, index)
+
+
+def prepareCatalogEntry(
+    catalog: bytearray,
+    index: int,
+    name: str,
+    extension: str,
+    type: int,
+    dataType: int,
+    firstBlock: int,
+    lastSectorUsage: int,
+):
+    cursor = index * 32
+    _name = name.upper() + "        "
+    for c in _name[:8]:
+        catalog[cursor] = c & 0xFF
+        cursor = cursor + 1
+    _extension = extension.upper() + "   "
+    for c in _extension[:3]:
+        catalog[cursor] = c & 0xFF
+        cursor = cursor + 1
+    data = bytearray(
+        [
+            type,
+            dataType,
+            firstBlock,
+            (lastSectorUsage >> 8) & 0xFF,
+            lastSectorUsage & 0xFF,
+        ]
+    )
+    for d in data:
+        catalog[cursor] = d
+        cursor = cursor + 1
+
+
+def prepareCatalogEntry__deleted(
+    catalog: bytearray,
+    index: int,
+    name: str,
+    extension: str,
+    type: int,
+    dataType: int,
+    firstBlock: int,
+    lastSectorUsage: int,
+):
+    cursor = index * 32
+    _name = name.upper() + "        "
+    catalog[cursor] = 0
+    cursor = cursor + 1
+    for c in _name[1:8]:
+        catalog[cursor] = c & 0xFF
+        cursor = cursor + 1
+    _extension = extension.upper() + "   "
+    for c in _extension[:3]:
+        catalog[cursor] = c & 0xFF
+        cursor = cursor + 1
+    data = bytearray(
+        [
+            type,
+            dataType,
+            firstBlock,
+            (lastSectorUsage >> 8) & 0xFF,
+            lastSectorUsage & 0xFF,
+        ]
+    )
+    for d in data:
+        catalog[cursor] = d
+        cursor = cursor + 1
+
+
+def prepareTrack20():
+    sector1 = DiskSector()
+    sector2 = DiskSector(prepareBlocAllocationTable)
 
 
 def prepareDummyDiskSide():
