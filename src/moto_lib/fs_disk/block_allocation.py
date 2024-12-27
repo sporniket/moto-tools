@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
+
 from enum import Enum
 
 
@@ -69,11 +70,11 @@ class BlockAllocation:
         return (
             0
             if self.isFree()
-            else 8
-            if self.isReserved() or self.hasNext()
-            else (self._status - BlockStatus.LAST_BLOCK.value)
-            if self.isLast
-            else 0
+            else (
+                8
+                if self.isReserved() or self.hasNext()
+                else (self._status - BlockStatus.LAST_BLOCK.value) if self.isLast else 0
+            )
         )
 
     def isFree(self) -> bool:

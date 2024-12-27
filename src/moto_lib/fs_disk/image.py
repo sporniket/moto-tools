@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
+
 from enum import Enum
 from typing import List
 

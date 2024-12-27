@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
+
 import os
 import sys
 from argparse import ArgumentParser, RawDescriptionHelpFormatter, FileType
@@ -25,7 +26,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter, FileType
 from typing import List, Union, Optional
 from enum import Enum
 
-from moto_lib import *
+from moto_lib import LeaderTapeBlockDescriptor, Tape, TapeBlock, TypeOfTapeBlock
 
 
 class TapeArchiveCliListener:
@@ -60,9 +61,7 @@ class TapeArchiveCliListener:
             fileType = (
                 "BASIC"
                 if desc.fileType == 0
-                else "DATA"
-                if desc.fileType == 1
-                else "BINARY"
+                else "DATA" if desc.fileType == 1 else "BINARY"
             )
             fileMode = desc.fileMode
             if desc.fileType == 0:

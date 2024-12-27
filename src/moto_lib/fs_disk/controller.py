@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
+
 from .image import DiskSide
 from .catalog import (
     CatalogEntry,
@@ -48,7 +49,7 @@ class FileSystemController:
         self,
         *,
         excludeDeletedEntries: bool = True,
-        excludeNeverUsedEntries: bool = True
+        excludeNeverUsedEntries: bool = True,
     ) -> list[CatalogEntry]:
         bat = self._bat
         result = []

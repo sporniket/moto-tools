@@ -19,6 +19,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
+
 from enum import Enum
 from .block_allocation import BlockAllocation, BlockStatus
 
@@ -224,10 +225,12 @@ class CatalogEntryUsage:
     def toDict(self) -> dict[str, any]:
         return {
             "sizeInBlocks": len(self._blocks),
-            "sizeInBytes": 0
-            if len(self._blocks) == 0
-            else (8 * (len(self._blocks) - 1) + self._blocks[-1].usage - 1) * 255
-            + self._usageOfLastSector,
+            "sizeInBytes": (
+                0
+                if len(self._blocks) == 0
+                else (8 * (len(self._blocks) - 1) + self._blocks[-1].usage - 1) * 255
+                + self._usageOfLastSector
+            ),
         }
 
 
@@ -241,9 +244,7 @@ class CatalogEntryStatus(Enum):
         return (
             CatalogEntryStatus.NEVER_USED
             if value == 0xFF
-            else CatalogEntryStatus.DELETED
-            if value == 0
-            else CatalogEntryStatus.ALIVE
+            else CatalogEntryStatus.DELETED if value == 0 else CatalogEntryStatus.ALIVE
         )
 
 

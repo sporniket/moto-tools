@@ -1,3 +1,78 @@
+[project]
+name = "moto-tools-by-sporniket"
+version = "0.0.3"
+authors = [
+    {name = "Sporniket", email = "sporniket.studio@gmail.com"},
+]
+description = "A python library with a set of command line interfaces that will assist a developper of software running on emulators of the family of computers made by Thomson during the 1980s, models \"MO\" and models \"TO\"."
+dependencies = []
+requires-python = ">= 3.10"
+readme = "README.md"
+license = {text = "GPL-3.0-or-later"}
+keywords = ["thomson MO5","toolchain"]
+
+[project.urls]
+homepage = "https://github.com/sporniket/moto-tools"
+#TODO documentation = "https://readthedocs.org"
+repository = "https://github.com/sporniket/moto-tools"
+bug-tracker = "https://github.com/sporniket/moto-tools/issues"
+
+[project.scripts]
+moto_tar = "moto_tar.__main__:main"
+
+
 [build-system]
-requires = ["setuptools>=42"]
-build-backend = "setuptools.build_meta"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+
+[tool.pdm.scripts]
+# --- cleaning
+_clean_tons_of_files = "python3 reclean.py"
+clean = { composite = [ "_clean_tons_of_files" ] }
+# --- linting ---
+_organize_imports = "python3 -m removestar -i ."
+_reformat = "python3 -m black ."
+reformat = { composite = [ "_organize_imports", "_reformat" ] }
+_lint_errors = "python3 -m flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics"
+_lint_warnings = "python3 -m flake8 src --count --ignore=E266 --exit-zero --max-complexity=10 --max-line-length=127 --statistics"
+lint_report = { composite = [ "_lint_errors", "_lint_warnings" ] }
+lint_ci = { composite = [ "reformat", "_lint_errors" ] }
+lint = { composite = [ "reformat", "lint_report" ] }
+# --- building ---
+_build_only = "python3 -m pdm build"
+_install = "python3 install.py"
+make = { composite = ["_build_only"] }
+make_install = { composite = ["_build_only","_install"] }
+# --- test & coverage ---
+_coverage_pytest = "python3 -m coverage run --source=src --branch -m pytest"
+_coverage_report = "python3 -m coverage report -m"
+_coverage_html = "python3 -m coverage html"
+_ci_only = { composite = ["_coverage_pytest","_coverage_report","_coverage_html"] }
+ci = { composite = ["clean", "lint_ci", "_ci_only"] }
+_pytest = "python3 -m pytest -vv"
+test = { composite = ["clean", "reformat", "_pytest"] }
+
+
+[tool.pdm.dev-dependencies]
+lint = [
+    "black>=24.4.2",
+    "flake8>=7.1.0",
+    "removestar>=1.5",
+]
+ci = [
+    "pytest>=8.2.2",
+    "coverage>=7.6.0",
+]
+scripting = [
+    "rich>=13.7.1",
+]
+build = [
+    "pdm>=2.17.1",
+    "pip>=24.1.2",
+    "twine>=5.1.1",
+]

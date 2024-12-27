@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License along with MO/
 If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
+
 from .bas2lst import BasicToListingCli
 
 __all__ = ["BasicToListingCli"]
