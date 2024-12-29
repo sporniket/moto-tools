@@ -68,7 +68,7 @@ class FileSystemController:
 
         return result
 
-    def computeUsage(self):
+    def computeUsage(self) -> FileSystemUsage:
         used = 0
         free = 0
         reserved = 0
