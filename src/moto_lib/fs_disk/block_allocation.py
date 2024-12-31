@@ -78,7 +78,7 @@ class BlockAllocation:
         )
 
     def isFree(self) -> bool:
-        return self._status == BlockStatus.FREE.value
+        return self._status == BlockStatus.FREE.value or self._status == self.id
 
     def isReserved(self) -> bool:
         return self._status == BlockStatus.RESERVED.value
