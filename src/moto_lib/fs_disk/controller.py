@@ -68,6 +68,49 @@ class FileSystemController:
 
         return result
 
+    def readFile(self, file: CatalogEntry) -> bytes:
+        usageDict = file.toUsageDict()
+        if usageDict is None:
+            return bytes([])
+        blocks, lastBlockUsage, lastSectorSize = (
+            usageDict["blocks"],
+            usageDict["usageOfLastBlock"],
+            usageDict["usageOfLastSector"],
+        )
+
+        # sanity check
+        if len(blocks) == 0:
+            raise ValueError(f"invalid.no.blocks.in.use")
+        if lastBlockUsage == 0:
+            raise ValueError(f"invalid.last.block.usage:{lastBlockUsage}")
+        if lastSectorSize == 0:
+            raise ValueError(f"invalid.last.sector.usage:{lastSectorSize}")
+
+        # proceeds
+        result = bytearray(file.toDict()["sizeInBytes"])
+
+        index = 0
+        lastI = len(blocks) - 1
+        for i, b in enumerate(blocks):
+            track = self._diskSide.tracks[b // 2]
+            firstSector = (b & 1) * 8
+
+            sMax, lastSize = (
+                (lastBlockUsage, lastSectorSize) if i == lastI else (8, 255)
+            )
+            lastS = sMax - 1
+
+            for s in range(sMax):
+                sector = track.sectors[firstSector + s].dataOfPayload
+                if s == lastS:
+                    result[index : index + lastSize] = sector[0:lastSize]
+                    index = index + lastSize
+                else:
+                    result[index : index + 255] = sector[0:255]
+                    index = index + 255
+
+        return result
+
     def computeUsage(self) -> FileSystemUsage:
         used = 0
         free = 0
