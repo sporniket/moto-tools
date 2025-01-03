@@ -236,6 +236,13 @@ class CatalogEntryUsage:
             ),
         }
 
+    def toUsageDict(self) -> dict[str, any]:
+        return {
+            "blocks": [b.id for b in self._blocks],
+            "usageOfLastBlock": self._blocks[-1].status - BlockStatus.LAST_BLOCK.value,
+            "usageOfLastSector": self._usageOfLastSector,
+        }
+
 
 class CatalogEntryStatus(Enum):
     NEVER_USED = 0
@@ -315,4 +322,13 @@ class CatalogEntry:
 
         result.update(self._data.toDict())
         result.update(self._usage.toDict())
+        return result
+
+    def toUsageDict(self) -> dict[str, any] or None:
+        """Returns the actual usage (block by block) of the file in the disk"""
+        if self._status != CatalogEntryStatus.ALIVE:
+            return None
+
+        result = {}
+        result.update(self._usage.toUsageDict())
         return result
