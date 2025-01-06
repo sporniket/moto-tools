@@ -43,7 +43,7 @@ class FileSystemController:
     @property
     def _bat(self) -> list[BlockAllocation]:
         batSector = self._diskSide.tracks[20].sectors[1].dataOfPayload
-        return [BlockAllocation(i, batSector[i]) for i in range(160)]
+        return [BlockAllocation(i, batSector[i]) for i in range(1, 161)]
 
     def listFiles(
         self,
@@ -92,8 +92,9 @@ class FileSystemController:
         index = 0
         lastI = len(blocks) - 1
         for i, b in enumerate(blocks):
-            track = self._diskSide.tracks[b // 2]
-            firstSector = (b & 1) * 8
+            _b = b - 1  # to go back to 0-based ids
+            track = self._diskSide.tracks[_b // 2]
+            firstSector = (_b & 1) * 8
 
             sMax, lastSize = (
                 (lastBlockUsage, lastSectorSize) if i == lastI else (8, 255)

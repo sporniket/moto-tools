@@ -206,13 +206,13 @@ class CatalogEntryUsage:
     ):
         blocks = []
         _blockId = firstBlock
-        _block = bat[_blockId]
+        _block = bat[_blockId - 1]
         if _block.isFree() or _block.isReserved():
             return CatalogEntryUsage()
         blocks.append(_block)
         while not _block.isLast():
             _blockId = _block.status
-            _block = bat[_blockId]
+            _block = bat[_blockId - 1]
             if _block.isFree() or _block.isReserved():
                 # something is fishy
                 break

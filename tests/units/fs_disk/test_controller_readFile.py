@@ -26,38 +26,18 @@ from moto_lib.fs_disk.controller import FileSystemController
 from moto_lib.fs_disk.image import TypeOfDiskImage, DiskSide, DiskSector
 from moto_lib.fs_disk.catalog import CatalogEntry
 
-
-### Utils to create and locate data for emulator and sddrive disk images
-class ImageUtils:
-    def __init__(self, type: TypeOfDiskImage):
-        self._sizeOfSector = type.sizeOfSector()
-        self._sizeOfTrack = 16 * self._sizeOfSector
-        self._sizeOfSide = 80 * self._sizeOfTrack
-        self._sizeOfImage = 4 * self._sizeOfSide
-
-    def reserveMutable(self) -> bytearray:
-        return bytearray(self._sizeOfImage)
-
-    def startOfSector(self, side: int, track: int, sector: int) -> int:
-        return (
-            side * self._sizeOfSide
-            + track * self._sizeOfTrack
-            + sector * self._sizeOfSector
-        )
+from .utils_disk import ImageUtils, BlockAllocationTableBuilder
 
 
 ### Utils to prepare image content
 def prepareBlockAllocationTable():
-    bat = bytearray([0xFF for i in range(256)])
-    # reserve block 0 (boot sector), 40 and 41 (track 20 hosting the bat and catalog)
-    for i in [0, 40, 41]:
-        bat[i] = 0xFE
-    # blocks i in range(1,9) are last blocks with i sectors occupied
-    for i in range(1, 9):
-        bat[i] = 0xC0 + i
-    # block 9 points to block 1 to make a 2-blocks files
-    bat[9] = 1
-    return bat
+    batBuilder = BlockAllocationTableBuilder()
+    # blocks i in range(2,10) are last blocks with i-1 sectors occupied
+    for i in range(2, 10):
+        batBuilder.withBlock(i, 0xC0 + i - 1)
+    # block 10 points to block 2 to make a 2-blocks files
+    batBuilder.withBlock(10, 2)
+    return batBuilder.build()
 
 
 def prepareCatalogEntry(
@@ -111,7 +91,9 @@ def prepareDummyDiskSide():
         image[start : start + 256] = clearData
     catItem = imageUtils.startOfSector(0, 20, 2)
     for n, i in enumerate(range(1, 10)):
-        image[catItem : catItem + 32] = prepareCatalogEntry(f"C{i}", "A", 1, 0, i, 255)
+        image[catItem : catItem + 32] = prepareCatalogEntry(
+            f"C{i}", "A", 1, 0, i + 1, 255
+        )
         catItem = catItem + 32
         if (n + 1) % 8 == 0:
             # Accomodate SDDrive image structure

@@ -26,49 +26,24 @@ from moto_lib.fs_disk.controller import FileSystemController
 from moto_lib.fs_disk.image import TypeOfDiskImage, DiskSide, DiskSector
 from moto_lib.fs_disk.catalog import CatalogEntry
 
-
-### Utils to create and locate data for emulator and sddrive disk images
-class ImageUtils:
-    def __init__(self, type: TypeOfDiskImage):
-        self._sizeOfSector = type.sizeOfSector()
-        self._sizeOfTrack = 16 * self._sizeOfSector
-        self._sizeOfSide = 80 * self._sizeOfTrack
-        self._sizeOfImage = 4 * self._sizeOfSide
-
-    def reserveMutable(self) -> bytearray:
-        return bytearray(self._sizeOfImage)
-
-    def startOfSector(self, side: int, track: int, sector: int) -> int:
-        return (
-            side * self._sizeOfSide
-            + track * self._sizeOfTrack
-            + sector * self._sizeOfSector
-        )
+from .utils_disk import ImageUtils, BlockAllocationTableBuilder
 
 
 ### Utils to prepare image content
 def prepareBlockAllocationTable():
-    bat = bytearray([0xFF for i in range(256)])
-    # reserve block 0 (boot sector), 40 and 41 (track 20 hosting the bat and catalog)
-    for i in [0, 40, 41]:
-        bat[i] = 0xFE
-    # blocks 2->3->5, 3 sectors used on block 5
-    bat[2] = 3
-    bat[3] = 5
-    bat[5] = 195
-    # block 4, 1 sector used
-    bat[4] = 193
-    # blocks 6->7, 8 sectors used on block 7
-    bat[6] = 7
-    bat[7] = 200
-    # blocks 8->9->10->11->12->13->14, 3 sectors used on block 14
-    bat[8] = 9
-    bat[9] = 10
-    bat[10] = 11
-    bat[11] = 12
-    bat[12] = 13
-    bat[13] = 14
-    bat[14] = 195
+    bat = (
+        BlockAllocationTableBuilder()
+        # blocks 2->3->5, 3 sectors used on block 5
+        .withSequenceOfBlocks([2, 3, 5], 3)
+        # block 4, 1 sector used
+        .withSequenceOfBlocks([4], 1)
+        # blocks 6->7, 8 sectors used on block 7
+        .withSequenceOfBlocks([6, 7], 8)
+        # blocks 8->9->10->11->12->13->14, 3 sectors used on block 14
+        .withSequenceOfBlocks(list(range(8, 15)), 3)
+        # block 160 is reserved
+        .withBlock(160, 0xFE).build()
+    )
     return bat
 
 
@@ -140,8 +115,8 @@ def test_FileSystemController_computeUsage__should_compute_usage():
     usage = FileSystemController(prepareDummyDiskSide()).computeUsage()
 
     assert usage.used == 13
-    assert usage.reserved == 3
-    assert usage.free == 144
+    assert usage.reserved == 4
+    assert usage.free == 143
 
 
 def test_FileSystemController_listFiles__should_list_catalog_entries():
