@@ -37,6 +37,21 @@ The current list of tools :
 
 ### Release notes
 
+#### v0.0.4
+
+Interim version, work has progressed tremendously after a year of hiatus. Tools have limited implementation but are not complete.
+
+**Support for python 3.8 and 3.9 is removed ; support for python 3.11, 3.12, and 3.13 is added**
+
+* Resolves #12 : [moto_lst2bas][mo5] Convert to tokenized format
+* Resolves #14 : [moto_sdar] list the content of a disk archive
+* Resolves #15 : [moto_sdar][moto_fdar] A library to handle the data layout of a disk image
+* Resolves #17 : [moto_sdar][moto_fdar] A library to handle the file system of the drive operating system
+* Resolves #20 : [moto_sdar][moto_fdar] A library to display the content being processed
+* Resolves #28 : [moto_sdar][moto_fdar] extract the content of a catalog entry
+* Fixes #31 : [bug] block allocation numbering and reserved track
+* Resolves #33 : [moto_sdar] extract the content of a disk archive
+
 #### v0.0.3
 
 * Resolves #6 [moto_prettier] force upper case outside litteral string
@@ -58,17 +73,9 @@ Provides the following tools :
 
 ## 2. What should you know before using **Sporniket's MO/TO tools** ?
 
-**Sporniket's MO/TO tools** is written using python version 3.8, and should work with python version to 3.10.
+**Sporniket's MO/TO tools** is written in python and supports python 3.10 up to 3.13
 
-It relies on the following packages to build and test :
-
-* build
-* pytest
-* coverage
-
-It also relies on the following package to enforce source formatting :
-
-* black
+It uses the `pdm` utility to manage its dependencies and management tasks
 
 see [README packaging](https://github.com/sporniket/moto-tools/blob/main/README-packaging.md) for further details.
 
@@ -82,7 +89,9 @@ To get the latest available models, one must clone the git repository, build and
 
 	git clone https://github.com/sporniket/moto-tools.git
 	cd moto-tools
-	./retest
+	pdm run test
+	pdm build
+	pip install $(ls ./dist/*.whl)
 
 Then, invoke one of the command line interfaces :
 
