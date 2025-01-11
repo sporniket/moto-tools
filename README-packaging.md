@@ -2,10 +2,12 @@
 
 _See https://packaging.python.org/en/latest/tutorials/packaging-projects/#generating-distribution-archives_
 
+> `pipx` is required
+
 ## Pre-checking
 
 ```shell
-python3 -m pip install --upgrade pip build pytest twine black coverage
+pipx install pdm
 ```
 
 ## Build and install locally
@@ -13,17 +15,19 @@ python3 -m pip install --upgrade pip build pytest twine black coverage
 > This is what is done by the `retest` shell script.
 
 ```shell
-python3 -m black 
-python3 -m build
-python3 -m pip install --force-reinstall dist/xxx.whl
+pdm run make
 ```
 
 Run test suites with coverage tracking and reporting :
 
 ```shell
-python3 -m coverage run --source=electronic_symbol_generator_for_cad --branch -m pytest
-python3 -m coverage report -m
-python3 -m coverage html 
+python run ci
+```
+
+Run test suites only :
+
+```shell
+python run test
 ```
 
 ## Publish on pypi
