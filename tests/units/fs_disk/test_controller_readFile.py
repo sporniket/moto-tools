@@ -33,10 +33,10 @@ from .utils_disk import ImageUtils, BlockAllocationTableBuilder
 def prepareBlockAllocationTable():
     batBuilder = BlockAllocationTableBuilder()
     # blocks i in range(2,10) are last blocks with i-1 sectors occupied
-    for i in range(2, 10):
-        batBuilder.withBlock(i, 0xC0 + i - 1)
+    for i in range(1, 9):
+        batBuilder.withBlock(i, 0xC0 + i)
     # block 10 points to block 2 to make a 2-blocks files
-    batBuilder.withBlock(10, 2)
+    batBuilder.withBlock(9, 1)
     return batBuilder.build()
 
 
@@ -91,9 +91,7 @@ def prepareDummyDiskSide():
         image[start : start + 256] = clearData
     catItem = imageUtils.startOfSector(0, 20, 2)
     for n, i in enumerate(range(1, 10)):
-        image[catItem : catItem + 32] = prepareCatalogEntry(
-            f"C{i}", "A", 1, 0, i + 1, 255
-        )
+        image[catItem : catItem + 32] = prepareCatalogEntry(f"C{i}", "A", 1, 0, i, 255)
         catItem = catItem + 32
         if (n + 1) % 8 == 0:
             # Accomodate SDDrive image structure

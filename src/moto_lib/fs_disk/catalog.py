@@ -206,13 +206,13 @@ class CatalogEntryUsage:
     ):
         blocks = []
         _blockId = firstBlock
-        _block = bat[_blockId - 1]
+        _block = bat[_blockId]
         if _block.isFree() or _block.isReserved():
             return CatalogEntryUsage()
         blocks.append(_block)
         while not _block.isLast():
             _blockId = _block.status
-            _block = bat[_blockId - 1]
+            _block = bat[_blockId]
             if _block.isFree() or _block.isReserved():
                 # something is fishy
                 break
@@ -226,22 +226,32 @@ class CatalogEntryUsage:
         self._usageOfLastSector = usageOfLastSector
 
     def toDict(self) -> dict[str, any]:
-        return {
-            "sizeInBlocks": len(self._blocks),
-            "sizeInBytes": (
-                0
-                if len(self._blocks) == 0
-                else (8 * (len(self._blocks) - 1) + self._blocks[-1].usage - 1) * 255
-                + self._usageOfLastSector
-            ),
-        }
+        return (
+            {
+                "sizeInBlocks": len(self._blocks),
+                "sizeInBytes": (
+                    0
+                    if len(self._blocks) == 0
+                    else (8 * (len(self._blocks) - 1) + self._blocks[-1].usage - 1)
+                    * 255
+                    + self._usageOfLastSector
+                ),
+            }
+            if len(self._blocks)
+            else {"sizeInBlocks": 0, "sizeInBytes": 0}
+        )
 
     def toUsageDict(self) -> dict[str, any]:
-        return {
-            "blocks": [b.id for b in self._blocks],
-            "usageOfLastBlock": self._blocks[-1].status - BlockStatus.LAST_BLOCK.value,
-            "usageOfLastSector": self._usageOfLastSector,
-        }
+        return (
+            {
+                "blocks": [b.id for b in self._blocks],
+                "usageOfLastBlock": self._blocks[-1].status
+                - BlockStatus.LAST_BLOCK.value,
+                "usageOfLastSector": self._usageOfLastSector,
+            }
+            if len(self._blocks)
+            else {"blocks": [], "usageOfLastBlock": 0, "usageOfLastSector": 0}
+        )
 
 
 class CatalogEntryStatus(Enum):

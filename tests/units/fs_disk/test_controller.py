@@ -42,7 +42,7 @@ def prepareBlockAllocationTable():
         # blocks 8->9->10->11->12->13->14, 3 sectors used on block 14
         .withSequenceOfBlocks(list(range(8, 15)), 3)
         # block 160 is reserved
-        .withBlock(160, 0xFE).build()
+        .withBlock(159, 0xFE).build()
     )
     return bat
 

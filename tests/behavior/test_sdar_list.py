@@ -96,34 +96,34 @@ def test_that_verbose_mode_does_list_files_with_details():
         assert (
             out.getvalue()
             == """Side 0
-  0000    .BAS  BASIC   TOKEN        886 Bytes      1 block 
-  0001    .BAS  BASIC   TOKEN        522 Bytes      1 block 
-  0002    .BAS  BASIC   TOKEN       1282 Bytes      1 block 
-  0003    .BAS  BASIC   TOKEN       2036 Bytes      1 block 
-  0004    .BAS  BASIC   TOKEN       1381 Bytes      1 block 
-  0005    .BAS  BASIC   TOKEN        764 Bytes      1 block 
-  0006    .BAS  BASIC   TOKEN       2687 Bytes      2 blocks
-  0007    .BAS  BASIC   TOKEN       1009 Bytes      1 block 
-  0008    .BAS  BASIC   TOKEN       3825 Bytes      2 blocks
-  0009    .BAS  BASIC   TOKEN        284 Bytes      1 block 
-  0010    .BAS  BASIC   TOKEN         68 Bytes      1 block 
-  0011    .BAS  BASIC   TOKEN       1020 Bytes      1 block 
-  0012    .BAS  BASIC   TOKEN       2124 Bytes      2 blocks
-  0013    .BAS  BASIC   TOKEN       1080 Bytes      1 block 
-  0014    .BAS  BASIC   TOKEN          0 Bytes      0 blocks
-  LSYS    .BAS  BASIC   ASCII       1289 Bytes      1 block 
-  0015    .BAS  BASIC   TOKEN        570 Bytes      1 block 
-  0016    .BAS  BASIC   TOKEN       1416 Bytes      1 block 
-  LSYSMO5B.BAS  BASIC   TOKEN        945 Bytes      1 block 
-  LSYSMO5 .BAS  BASIC   ASCII        926 Bytes      1 block 
-  0017    .BAS  BASIC   TOKEN       1926 Bytes      1 block 
-  0018    .BAS  BASIC   TOKEN        912 Bytes      1 block 
-  0019    .BAS  BASIC   TOKEN        918 Bytes      1 block 
-  0020    .BAS  BASIC   TOKEN        918 Bytes      1 block 
-  0021    .BAS  BASIC   TOKEN        898 Bytes      1 block 
-  0022    .BAS  BASIC   TOKEN        983 Bytes      1 block 
-  0023    .BAS  BASIC   TOKEN        945 Bytes      1 block 
-27 files, (7 + 31) blocks used (23.8%)
+  0000    .BAS  BASIC   TOKEN        631 Bytes      1 block 
+  0001    .BAS  BASIC   TOKEN       1287 Bytes      1 block 
+  0002    .BAS  BASIC   TOKEN       1792 Bytes      1 block 
+  0003    .BAS  BASIC   TOKEN       2801 Bytes      2 blocks
+  0004    .BAS  BASIC   TOKEN       2911 Bytes      2 blocks
+  0005    .BAS  BASIC   TOKEN       3059 Bytes      2 blocks
+  0006    .BAS  BASIC   TOKEN       3452 Bytes      2 blocks
+  0007    .BAS  BASIC   TOKEN       4324 Bytes      3 blocks
+  0008    .BAS  BASIC   TOKEN       4335 Bytes      3 blocks
+  0009    .BAS  BASIC   TOKEN       4619 Bytes      3 blocks
+  0010    .BAS  BASIC   TOKEN       5168 Bytes      3 blocks
+  0011    .BAS  BASIC   TOKEN       6120 Bytes      4 blocks
+  0012    .BAS  BASIC   TOKEN       7224 Bytes      4 blocks
+  0013    .BAS  BASIC   TOKEN       7455 Bytes      4 blocks
+  0014    .BAS  BASIC   TOKEN       7527 Bytes      4 blocks
+  LSYS    .BAS  BASIC   ASCII       8684 Bytes      5 blocks
+  0015    .BAS  BASIC   TOKEN       7455 Bytes      4 blocks
+  0016    .BAS  BASIC   TOKEN       7026 Bytes      4 blocks
+  LSYSMO5B.BAS  BASIC   TOKEN       7065 Bytes      4 blocks
+  LSYSMO5 .BAS  BASIC   ASCII       8066 Bytes      4 blocks
+  0017    .BAS  BASIC   TOKEN       7026 Bytes      4 blocks
+  0018    .BAS  BASIC   TOKEN       7032 Bytes      4 blocks
+  0019    .BAS  BASIC   TOKEN       7038 Bytes      4 blocks
+  0020    .BAS  BASIC   TOKEN       7038 Bytes      4 blocks
+  0021    .BAS  BASIC   TOKEN       7018 Bytes      4 blocks
+  0022    .BAS  BASIC   TOKEN       7103 Bytes      4 blocks
+  0023    .BAS  BASIC   TOKEN       7065 Bytes      4 blocks
+27 files, (7 + 88) blocks used (59.4%)
 ---
 Side 1
 empty, (0 + 0) blocks used (0.0%)

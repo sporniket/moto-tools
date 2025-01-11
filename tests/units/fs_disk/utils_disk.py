@@ -53,12 +53,13 @@ class BlockAllocationTableBuilder:
 
     def withSequenceOfBlocks(self, blocks: list[int], lastBlockUsage: int):
         for i, b in enumerate(blocks[:-1]):
-            self._bat[b] = blocks[i + 1]
-        self._bat[blocks[-1]] = 0xC0 + lastBlockUsage
+            # block x is stored at bat[x+1]
+            self._bat[b + 1] = blocks[i + 1]
+        self._bat[blocks[-1] + 1] = 0xC0 + lastBlockUsage
         return self
 
     def withBlock(self, index: int, value: int):
-        self._bat[index] = value
+        self._bat[index + 1] = value
         return self
 
     def build(self) -> bytearray:

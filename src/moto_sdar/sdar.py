@@ -153,7 +153,7 @@ If not, see <https://www.gnu.org/licenses/>. 
             raise ValueError(f"error.file.name.extension.should.be.sd:{archive}")
 
         ### process target folder
-        hasTargetDirectory = False
+        hasTargetDirectory = args.into is not None
         if args.into is not None:
             print(f"has into : {args.into}")
             # TODO
@@ -193,24 +193,40 @@ If not, see <https://www.gnu.org/licenses/>. 
                 sdar.write(disk.rawData)
 
         elif args.extract:
-            raise RuntimeError("not.implemented.yet")
-            with open(args.archive, "rb") as sdar:
-                # TODO
-                pass
             targetDir = (
                 args.into if hasTargetDirectory else os.path.dirname(args.archive)
             )
-
-        elif args.list:
             with open(args.archive, "rb") as sdar:
-                # TODO
                 disk = DiskImage(
                     sdar.read(), typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
                 )
-                # **event** : size of archive, type (emulator/sddrive), number of sides
 
-                # steps
-                # * for each disk side (a.k.a. 'unit')
+                for i, side in enumerate(disk.sides):
+                    listener.onBeginOfSide(i)
+                    sidePath = os.path.join(targetDir, f"side{i}")
+                    os.makedirs(sidePath)
+                    controller = FileSystemController(side)
+                    for entry in controller.listFiles():
+                        file = entry.toDict()
+                        listener.onBeginOfFile(file)
+                        extractedFileName = (
+                            file["name"].rstrip() + "." + file["extension"].rstrip()
+                        )
+                        data = controller.readFile(entry)
+                        with open(
+                            os.path.join(sidePath, extractedFileName), "wb"
+                        ) as outf:
+                            outf.write(data)
+                        listener.onEndOfFile(file)
+                    listener.onEndOfSide(controller.computeUsage())
+                listener.onDone()
+
+        elif args.list:
+            with open(args.archive, "rb") as sdar:
+                disk = DiskImage(
+                    sdar.read(), typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+                )
+
                 for i, side in enumerate(disk.sides):
                     listener.onBeginOfSide(i)
                     controller = FileSystemController(side)
