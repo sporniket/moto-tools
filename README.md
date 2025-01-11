@@ -91,7 +91,7 @@ To get the latest available models, one must clone the git repository, build and
 	cd moto-tools
 	pdm run test
 	pdm build
-	pip install $(ls ./dist/*.whl)
+	pipx install $(ls ./dist/*.whl)
 
 Then, invoke one of the command line interfaces :
 
@@ -102,7 +102,7 @@ python3 -m moto_tools_tar [option] input_file
 ### Using pip
 
 ```
-pip install moto-tools-by-sporniket
+pipx install moto-tools-by-sporniket
 ```
 
 Then, invoke the command line interface :
