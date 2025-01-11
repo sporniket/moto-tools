@@ -1,6 +1,6 @@
 [project]
 name = "moto-tools-by-sporniket"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
     {name = "Sporniket", email = "sporniket.studio@gmail.com"},
 ]
@@ -18,7 +18,12 @@ repository = "https://github.com/sporniket/moto-tools"
 bug-tracker = "https://github.com/sporniket/moto-tools/issues"
 
 [project.scripts]
+moto_nl = "moto_nl.__main__:main"
+moto_lst2bas = "moto_lst2bas.__main__:main"
+moto_bas2lst = "moto_bas2lst.__main__:main"
+moto_prettier = "moto_prettier.__main__:main"
 moto_tar = "moto_tar.__main__:main"
+moto_sdar = "moto_sdar.__main__:main"
 
 
 [build-system]
