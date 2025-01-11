@@ -1,7 +1,7 @@
 # Sporniket's MO/TO tools
 
 [![Latest version](https://img.shields.io/pypi/v/moto-tools-by-sporniket)](https://pypi.org/project/moto-tools-by-sporniket/releases)
-[![Workflow status](https://img.shields.io/github/workflow/status/sporniket/moto-tools/Python%20package)](https://github.com/sporniket/moto-tools/actions/workflows/python-package.yml)
+[![Workflow status](https://img.shields.io/github/workflow/status/sporniket/moto-tools/Python%20package)](https://github.com/sporniket/moto-tools/actions/workflows/python-app.yml)
 [![Download status](https://img.shields.io/pypi/dm/moto-tools-by-sporniket)](https://pypi.org/project/moto-tools-by-sporniket/)
 
 > [WARNING] Please read carefully this note before using this project. It contains important facts.
@@ -18,6 +18,16 @@ Content
 
 **Sporniket's MO/TO tools** is a python library with a set of command line interfaces that will assist a developper of software running on emulators of the family of computers made by Thomson during the 1980s, models "MO" and models "TO".
 
+The current list of tools : 
+
+* Tools for basic language
+  * `moto_nl` : number the lines of a basic source that have line unnumbered ; the command line interface is designed after the command `nl`.
+  * `moto_prettier` : consistently format the provided utf-8 encoded basic source file
+  * `moto_bas2lst` : convert tokenized or ASCII basic program into an utf-8 encoded basic source file
+  * `moto_lst2bas` : convert an utf-8 encoded source file into tokenized or ASCII basic program
+* Tools for manipulating media images (tape, floppy disks) for emulation and exchange
+  * `moto_tar` : list, create or extract `*.k7` tape images ; the command line interface is designed after the command `tar` (_Tape ARchives_)
+  * `moto_sdar` : list, create or extract `*.sd` SDDrive disk images (a.k.a. _SD ARchives_) ; the command line interface is also designed after the command `tar`
 
 ### Licence
 
