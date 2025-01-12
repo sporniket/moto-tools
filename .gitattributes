@@ -1,3 +1,4 @@
 tests/data.expected/B2LIN-msdos.lst eol=crlf
 tests/data.expected/extracted__10_lsystem_mo5__2023-10-14.sd/side0/LSYS.BAS eol=crlf
 tests/data.expected/extracted__10_lsystem_mo5__2023-10-14.sd/side0/LSYSMO5.BAS eol=crlf
+tests/data/ASC_0D0A.BAS eol=crlf

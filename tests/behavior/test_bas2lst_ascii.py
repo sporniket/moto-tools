@@ -28,7 +28,7 @@ import io
 from typing import List, Union, Optional
 
 from unittest.mock import patch
-from contextlib import redirect_stdout
+from contextlib import redirect_stdout, redirect_stderr
 
 from moto_bas2lst import BasicToListingCli
 
@@ -53,9 +53,11 @@ def test_that_it_uses_unix_newlines_by_default():
     ]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = BasicToListingCli().run()
+            with redirect_stderr(io.StringIO()) as err:
+                returnCode = BasicToListingCli().run()
         assert returnCode == 0
         assert out.getvalue() == ""
+        assert err.getvalue() == ""
         for f in source_files:
             pathActual = os.path.join(tmp_dir, f"{f[:-3]}lst")
             assert os.path.exists(pathActual) and os.path.isfile(pathActual)
@@ -76,15 +78,39 @@ def test_that_it_uses_msdos_newlines_with_dos_switch():
     ]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = BasicToListingCli().run()
+            with redirect_stderr(io.StringIO()) as err:
+                returnCode = BasicToListingCli().run()
         assert returnCode == 0
         assert out.getvalue() == ""
+        assert err.getvalue() == ""
         for f in source_files:
             pathActual = os.path.join(tmp_dir, f"{f[:-3]}lst")
             assert os.path.exists(pathActual) and os.path.isfile(pathActual)
             assert filecmp.cmp(
                 pathActual,
                 os.path.join(source_dir_expected, f"{f[:-4]}-msdos.lst"),
+                shallow=False,
+            )
+    shutil.rmtree(tmp_dir)
+
+
+def test_that_it_uses_unix_newlines_by_default():
+    files = ["ASC_0D0A.BAS"]
+    tmp_dir = initializeTmpWorkspace([os.path.join(source_dir, f) for f in files])
+    baseArgs = ["prog"] + [os.path.join(tmp_dir, f"{source},a") for source in files]
+    with patch.object(sys, "argv", baseArgs):
+        with redirect_stdout(io.StringIO()) as out:
+            with redirect_stderr(io.StringIO()) as err:
+                returnCode = BasicToListingCli().run()
+        assert returnCode == 0
+        assert out.getvalue() == ""
+        assert err.getvalue() == ""
+        for f in files:
+            pathActual = os.path.join(tmp_dir, f"{f[:-3]}lst")
+            assert os.path.exists(pathActual) and os.path.isfile(pathActual)
+            assert filecmp.cmp(
+                pathActual,
+                os.path.join(source_dir_expected, f"{f[:-3]}lst"),
                 shallow=False,
             )
     shutil.rmtree(tmp_dir)

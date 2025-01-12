@@ -90,13 +90,13 @@ class BasicToListingCli:
                 with open(source[:-3] + "lst", "wb") as lst:
                     lineOfCodeLength = 0
                     for byte in data:
-                        if byte == 0xD:
+                        if byte in [0xD, 0xA]:
                             if lineOfCodeLength > 0:
                                 lst.write(endOfLine)
                             lineOfCodeLength = 0
                         else:
                             lst.write(bytes([byte]))
                             lineOfCodeLength += 1
-                if lineOfCodeLength > 0:
-                    lst.write(endOfLine)
+                    if lineOfCodeLength > 0:
+                        lst.write(endOfLine)
         return 0
