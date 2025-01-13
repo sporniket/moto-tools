@@ -106,6 +106,15 @@ class DiskSector:
     def dataOfPayload(self) -> bytes:
         return bytes(self._data[0 : self._typeOfDiskImage.sizeOfPayload()])
 
+    def write(self, data: bytes | bytearray):
+        lenData = len(data)
+        if lenData == 0:
+            # nothing to change
+            return
+        lenMax = self._typeOfDiskImage.sizeOfPayload()
+        lenToWrite = lenData if lenData <= lenMax else lenMax
+        self._data[:lenToWrite] = data[:lenToWrite]
+
 
 class DiskTrack:
     SECTORS_PER_TRACK = 16

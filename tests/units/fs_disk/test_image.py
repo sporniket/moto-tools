@@ -34,7 +34,7 @@ from moto_lib.fs_disk.image import (
 ######################################################## Test suite for TypeOfDiskImage
 
 
-def test_TypeOfDiskImage_should_verify_expectations():
+def test_TypeOfDiskImage__should_verify_expectations():
     then_TypeOfDiskImage_verify_expectations(
         TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE, 0, 256, 256
     )
@@ -56,12 +56,12 @@ def then_TypeOfDiskImage_verify_expectations(
 # --- for emulator images
 
 
-def test_DiskSector_for_emulator_should_reject_undersized_data():
+def test_DiskSector__for_emulator__should_reject_undersized_data():
     with pytest.raises(ValueError) as error:
         DiskSector([i for i in range(255)])
 
 
-def test_DiskSector_for_emulator_should_contain_provided_data():
+def test_DiskSector__for_emulator__should_contain_provided_data():
     ds = DiskSector([i for i in range(256)])
 
     # verify payload
@@ -75,7 +75,7 @@ def test_DiskSector_for_emulator_should_contain_provided_data():
         assert d == i
 
 
-def test_DiskSector_for_emulator_should_consume_256_bytes_only_from_data():
+def test_DiskSector__for_emulator__should_consume_256_bytes_only_from_data():
     ds = DiskSector([i % 256 for i in range(257)])
 
     # verify payload
@@ -89,7 +89,7 @@ def test_DiskSector_for_emulator_should_consume_256_bytes_only_from_data():
         assert d == i
 
 
-def test_DiskSector_for_emulator_should_contain_blank_data_when_no_data_is_provided():
+def test_DiskSector__for_emulator__should_contain_blank_data_when_no_data_is_provided():
     ds = DiskSector()
 
     # verify payload
@@ -103,10 +103,24 @@ def test_DiskSector_for_emulator_should_contain_blank_data_when_no_data_is_provi
         assert d == 0xE5
 
 
+def test_DiskSector_write__for_emulator__should_write_data():
+    # prepare
+    ds = DiskSector([0x55 for i in range(256)])
+
+    for size in range(256):
+        # execute
+        toWrite = [i for i in range(size)]
+        ds.write(bytes(toWrite))
+
+        # verify
+        expected = bytes(toWrite + [0x55 for i in range(size, 256)])
+        assert ds.dataOfPayload == expected
+
+
 # --- for SDDrive images
 
 
-def test_DiskSector_for_sddrive_should_reject_undersized_data():
+def test_DiskSector__for_sddrive__should_reject_undersized_data():
     with pytest.raises(ValueError) as error:
         DiskSector(
             [i % 256 for i in range(511)],
@@ -114,7 +128,7 @@ def test_DiskSector_for_sddrive_should_reject_undersized_data():
         )
 
 
-def test_DiskSector_for_sddrive_should_contain_provided_data():
+def test_DiskSector__for_sddrive__should_contain_provided_data():
     ds = DiskSector(
         [i % 256 for i in range(512)],
         typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE,
@@ -131,7 +145,7 @@ def test_DiskSector_for_sddrive_should_contain_provided_data():
         assert d == i if i < 256 else d == 0xFF
 
 
-def test_DiskSector_for_sddrive_should_consume_512_bytes_only_from_data():
+def test_DiskSector__for_sddrive__should_consume_512_bytes_only_from_data():
     ds = DiskSector(
         [i % 256 for i in range(513)],
         typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE,
@@ -148,7 +162,7 @@ def test_DiskSector_for_sddrive_should_consume_512_bytes_only_from_data():
         assert d == i if i < 256 else d == 0xFF
 
 
-def test_DiskSector_for_sddrive_should_contain_blank_data_when_no_data_is_provided():
+def test_DiskSector__for_sddrive__should_contain_blank_data_when_no_data_is_provided():
     ds = DiskSector(typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE)
 
     # verify payload
@@ -160,6 +174,22 @@ def test_DiskSector_for_sddrive_should_contain_blank_data_when_no_data_is_provid
     assert len(ds.dataOfSector) == 512
     for i, d in enumerate(ds.dataOfSector):
         assert d == 0xE5 if i < 256 else d == 0xFF
+
+
+def test_DiskSector_write__for_sddrive__should_write_data():
+    # prepare
+    ds = DiskSector(
+        [0x55 for i in range(512)], typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+    )
+
+    for size in range(256):
+        # execute
+        toWrite = [i for i in range(size)]
+        ds.write(bytes(toWrite))
+
+        # verify
+        expected = bytes(toWrite + [0x55 for i in range(size, 256)])
+        assert ds.dataOfPayload == expected
 
 
 ######################################################## Utilities for subsequent test suites
@@ -189,12 +219,12 @@ def then_DiskSector_dataOfPayload_has_expected_content(
 # --- for emulator images
 
 
-def test_DiskTrack_for_emulator_should_reject_undersized_data():
+def test_DiskTrack__for_emulator__should_reject_undersized_data():
     with pytest.raises(ValueError) as error:
         DiskTrack([0 for i in range(4095)])
 
 
-def test_DiskTrack_for_emulator_should_contain_provided_data():
+def test_DiskTrack__for_emulator__should_contain_provided_data():
     source = bytes(
         [dat for s in [[i + 1 for d in range(256)] for i in range(16)] for dat in s]
     )
@@ -205,7 +235,7 @@ def test_DiskTrack_for_emulator_should_contain_provided_data():
         )
 
 
-def test_DiskTrack_for_emulator_should_contain_blank_data_when_no_data_is_provided():
+def test_DiskTrack__for_emulator__should_contain_blank_data_when_no_data_is_provided():
     track = DiskTrack()
     for i, s in enumerate(track.sectors):
         then_DiskSector_dataOfPayload_has_expected_content(s, BLANK_SECTOR)
@@ -214,7 +244,7 @@ def test_DiskTrack_for_emulator_should_contain_blank_data_when_no_data_is_provid
 # --- for SDDrive images
 
 
-def test_DiskTrack_for_sddrive_should_reject_undersized_data():
+def test_DiskTrack__for_sddrive__should_reject_undersized_data():
     with pytest.raises(ValueError) as error:
         DiskTrack(
             [0 for i in range(8191)],
@@ -222,7 +252,7 @@ def test_DiskTrack_for_sddrive_should_reject_undersized_data():
         )
 
 
-def test_DiskTrack_for_sddrive_should_contain_provided_data():
+def test_DiskTrack__for_sddrive__should_contain_provided_data():
     source = bytes(
         [dat for s in [[i + 1 for d in range(512)] for i in range(16)] for dat in s]
     )
@@ -233,7 +263,7 @@ def test_DiskTrack_for_sddrive_should_contain_provided_data():
         )
 
 
-def test_DiskTrack_for_sddrive_should_contain_blank_data_when_no_data_is_provided():
+def test_DiskTrack__for_sddrive__should_contain_blank_data_when_no_data_is_provided():
     track = DiskTrack(typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE)
     for i, s in enumerate(track.sectors):
         then_DiskSector_dataOfPayload_has_expected_content(s, BLANK_SECTOR)
@@ -245,12 +275,12 @@ def test_DiskTrack_for_sddrive_should_contain_blank_data_when_no_data_is_provide
 # --- for emulator images
 
 
-def test_DiskSide_for_emulator_should_reject_undersized_data():
+def test_DiskSide__for_emulator__should_reject_undersized_data():
     with pytest.raises(ValueError) as error:
         DiskSide([0 for i in range(327679)])
 
 
-def test_DiskSide_for_emulator_should_contain_provided_data():
+def test_DiskSide__for_emulator__should_contain_provided_data():
     source = bytes(
         [dat for s in [[i + 1 for d in range(4096)] for i in range(80)] for dat in s]
     )
@@ -261,7 +291,7 @@ def test_DiskSide_for_emulator_should_contain_provided_data():
             then_DiskSector_dataOfPayload_has_expected_content(s, expectedPayload)
 
 
-def test_DiskSide_for_emulator_should_contain_blank_data_when_no_data_is_provided():
+def test_DiskSide__for_emulator__should_contain_blank_data_when_no_data_is_provided():
     side = DiskSide()
     for i, t in enumerate(side.tracks):
         for s in t.sectors:
@@ -271,7 +301,7 @@ def test_DiskSide_for_emulator_should_contain_blank_data_when_no_data_is_provide
 # --- for SDDrive images
 
 
-def test_DiskSide_for_sddrive_should_reject_undersized_data():
+def test_DiskSide__for_sddrive__should_reject_undersized_data():
     with pytest.raises(ValueError) as error:
         DiskSide(
             [0 for i in range(655359)],
@@ -279,7 +309,7 @@ def test_DiskSide_for_sddrive_should_reject_undersized_data():
         )
 
 
-def test_DiskSide_for_sddrive_should_contain_provided_data():
+def test_DiskSide__for_sddrive__should_contain_provided_data():
     source = bytes(
         [dat for s in [[i + 1 for d in range(8192)] for i in range(80)] for dat in s]
     )
@@ -290,7 +320,7 @@ def test_DiskSide_for_sddrive_should_contain_provided_data():
             then_DiskSector_dataOfPayload_has_expected_content(s, expectedPayload)
 
 
-def test_DiskSide_for_sddrive_should_contain_blank_data_when_no_data_is_provided():
+def test_DiskSide__for_sddrive__should_contain_blank_data_when_no_data_is_provided():
     side = DiskSide(typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE)
     for i, t in enumerate(side.tracks):
         for s in t.sectors:
@@ -343,7 +373,7 @@ def createTestDataForSddrive(numberOfSides: int) -> bytes:
 # --- for emulator images
 
 
-def test_DiskImage_for_emulator_should_reject_undersized_data():
+def test_DiskImage__for_emulator__should_reject_undersized_data():
     ## image with one side - 1 byte
     with pytest.raises(ValueError) as error:
         DiskImage([0 for i in range(327679)])
@@ -355,13 +385,13 @@ def test_DiskImage_for_emulator_should_reject_undersized_data():
         DiskImage([0 for i in range(1310719)])
 
 
-def test_DiskImage_for_emulator_should_reject_data_for_3_sides_only():
+def test_DiskImage__for_emulator__should_reject_data_for_3_sides_only():
     ## image with three sides
     with pytest.raises(ValueError) as error:
         DiskImage([0 for i in range(983040)])
 
 
-def test_DiskImage_for_emulator_should_contain_expected_number_of_sides_with_provided_data():
+def test_DiskImage__for_emulator__should_contain_expected_number_of_sides_with_provided_data():
     for numberOfSides in [1, 2, 4]:
         source = createTestDataForEmulator(numberOfSides)
         image = DiskImage(source)
@@ -369,26 +399,26 @@ def test_DiskImage_for_emulator_should_contain_expected_number_of_sides_with_pro
         then_image_contains_test_data(image)
 
 
-def test_DiskImage_for_emulator_should_contain_at_most_4_disk_sides():
+def test_DiskImage__for_emulator__should_contain_at_most_4_disk_sides():
     source = createTestDataForEmulator(5)
     image = DiskImage(source)
     assert len(image.sides) == 4
     then_image_contains_test_data(image)
 
 
-def test_DiskImage_for_emulator_should_contain_wanted_number_of_sides_with_blank_data_when_no_data_is_provided():
+def test_DiskImage__for_emulator__should_contain_wanted_number_of_sides_with_blank_data_when_no_data_is_provided():
     for numberOfSides in [1, 2, 4]:
         image = DiskImage(wantedNumberOfSides=numberOfSides)
         assert len(image.sides) == numberOfSides
         then_image_contains_blank_data(image)
 
 
-def test_DiskImage_for_emulator_should_refuse_creating_blank_image_with_only_3_sides():
+def test_DiskImage__for_emulator__should_refuse_creating_blank_image_with_only_3_sides():
     with pytest.raises(ValueError) as error:
         DiskImage(wantedNumberOfSides=3)
 
 
-def test_DiskImage_for_emulator_should_create_blank_image_with_4_sides_when_unspecified_or_more_than_4_is_wanted():
+def test_DiskImage__for_emulator__should_create_blank_image_with_4_sides_when_unspecified_or_more_than_4_is_wanted():
     image = DiskImage()
     assert len(image.sides) == 4
     then_image_contains_blank_data(image)
@@ -401,7 +431,7 @@ def test_DiskImage_for_emulator_should_create_blank_image_with_4_sides_when_unsp
 # --- for SDDrive images
 
 
-def test_DiskImage_for_sddrive_should_reject_undersized_data():
+def test_DiskImage__for_sddrive__should_reject_undersized_data():
     ## image with four sides - 1 byte
     with pytest.raises(ValueError) as error:
         DiskImage(
@@ -410,21 +440,21 @@ def test_DiskImage_for_sddrive_should_reject_undersized_data():
         )
 
 
-def test_DiskImage_for_sddrive_should_contain_expected_number_of_sides_with_provided_data():
+def test_DiskImage__for_sddrive__should_contain_expected_number_of_sides_with_provided_data():
     source = createTestDataForSddrive(4)
     image = DiskImage(source, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE)
     assert len(image.sides) == 4
     then_image_contains_test_data(image)
 
 
-def test_DiskImage_for_sddrive_should_contain_at_most_4_disk_sides():
+def test_DiskImage__for_sddrive__should_contain_at_most_4_disk_sides():
     source = createTestDataForSddrive(5)
     image = DiskImage(source, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE)
     assert len(image.sides) == 4
     then_image_contains_test_data(image)
 
 
-def test_DiskImage_for_sddrive_should_contain_4_sides_with_blank_data_when_no_data_is_provided():
+def test_DiskImage__for_sddrive__should_contain_4_sides_with_blank_data_when_no_data_is_provided():
     image = DiskImage(typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE)
     assert len(image.sides) == 4
     then_image_contains_blank_data(image)
