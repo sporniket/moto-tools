@@ -20,6 +20,7 @@ If not, see <https://www.gnu.org/licenses/>. 
 ---
 """
 
+from __future__ import annotations
 from enum import Enum
 
 
@@ -54,8 +55,8 @@ class BlockAllocation:
     def __init__(self, id: int, status: int = BlockStatus.FREE.value):
         if not BlockStatus.isValidStatus(status):
             raise ValueError(f"block.allocation.status.is.wrong:{status}")
-        self._id = id
         self._status = status
+        self._id = id
 
     @property
     def id(self) -> int:
@@ -91,3 +92,24 @@ class BlockAllocation:
 
     def hasNext(self) -> bool:
         return self._status < BlockStatus.MAX_NEXT.value
+
+    def setFree(self):
+        self._status = BlockStatus.FREE.value
+
+    def reserve(self):
+        self._status = BlockStatus.RESERVED.value
+
+    def linkTo(self, target: int | BlockAllocation):
+        if isinstance(target, BlockAllocation):
+            if target.id not in range(160):
+                raise ValueError(f"id.out.of.range:{target.id}")
+            self._status = target.id
+        elif isinstance(target, int):
+            if target not in range(160):
+                raise ValueError(f"id.out.of.range:{target}")
+            self._status = target
+
+    def setupAsLastBlock(self, usage: int):
+        if usage not in range(1, 9):
+            raise ValueError(f"usage.out.of.range:{usage}")
+        self._status = 0xC0 + usage

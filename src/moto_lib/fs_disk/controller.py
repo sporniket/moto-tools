@@ -25,8 +25,30 @@ from .catalog import (
     CatalogEntry,
     CatalogEntryRecord,
     CatalogEntryStatus,
+    TypeOfDiskFile,
+    TypeOfData,
 )
 from .block_allocation import BlockAllocation
+
+
+def _computeRequiredSlots(sizeOfData: int, sizeOfSlot: int) -> (int, int):
+    requiredSlots = sizeOfData // sizeOfSlot
+    usageOfLastSlot = sizeOfData % sizeOfSlot
+    if usageOfLastSlot > 0:
+        requiredSlots = requiredSlots + 1
+    else:
+        usageOfLastSlot = sizeOfSlot
+    return (requiredSlots, usageOfLastSlot)
+
+
+def _computeTrackSectorOfBlock(blockId: int, diskSide: DiskSide) -> (int, int):
+    return (diskSide.tracks[blockId // 2], (blockId & 1) * 8)
+
+
+def _batToBytes(bat: list[BlockAllocation]) -> bytes:
+    result = bytearray(256)
+    result[1 : len(bat)] = [b.status for b in bat]
+    return bytes(result)
 
 
 class FileSystemUsage:
@@ -44,6 +66,12 @@ class FileSystemController:
     def _bat(self) -> list[BlockAllocation]:
         batSector = self._diskSide.tracks[20].sectors[1].dataOfPayload
         return [BlockAllocation(i - 1, batSector[i]) for i in range(1, 161)]
+
+    @_bat.setter
+    def _bat(self, bat: list[BlockAllocation]):
+        batSector = bytearray(256)
+        batSector[1 : len(bat) + 1] = [b.status for b in bat]
+        self._diskSide.tracks[20].sectors[1].dataOfPayload = batSector
 
     def listFiles(
         self,
@@ -94,8 +122,7 @@ class FileSystemController:
         index = 0
         lastI = len(blocks) - 1
         for i, b in enumerate(blocks):
-            track = self._diskSide.tracks[b // 2]
-            firstSector = (b & 1) * 8
+            track, firstSector = _computeTrackSectorOfBlock(b, self._diskSide)
 
             sMax, lastSize = (
                 (lastBlockUsage, lastSectorSize) if i == lastI else (8, 255)
@@ -112,6 +139,101 @@ class FileSystemController:
                     index = index + 255
 
         return result
+
+    def writeFile(
+        self,
+        content: bytes or bytearray,
+        name: str,
+        extension: str,
+        *,
+        typeOfFile: TypeOfDiskFile = TypeOfDiskFile.BASIC_DATA,
+        typeOfData: TypeOfData = TypeOfData.BINARY_DATA,
+    ):
+        # checks that there is enough space, otherwise error
+        # find the first free block
+        # while there is data to write, fill the block, find the next free block
+        # --> first block, last block usage, last sector usage
+        # update block allocation table
+        # find first available entry in catalog
+        # create CatalogEntry (name/extension is uppercased)
+        # write CatalogEntry in sector
+
+        bat = self._bat
+        dataLen = len(content)
+
+        requiredSectorLength, usageOfLastSector = _computeRequiredSlots(dataLen, 255)
+        requiredBlockLength, usageOfLastBlock = _computeRequiredSlots(
+            requiredSectorLength, 8
+        )
+
+        batBlocks = [b for b in bat if b.isFree()][:requiredBlockLength]
+        if len(batBlocks) < requiredBlockLength:
+            raise ValueError(
+                f"not.enough.blocks:require.{requiredBlockLength}:got.{len(batBlocks)}"
+            )
+
+        # copy of data into disk image
+        currentBlock = 0
+        currentSector = 0
+        lastBlockIndex = requiredBlockLength - 1
+        for currentSliceIndex in range(0, dataLen, 255):
+            # for each sector to write
+            if currentSector == 0:
+                # if sector counter is 0 : find track/first sector of block
+                track, firstSector = _computeTrackSectorOfBlock(
+                    batBlocks[currentBlock].id, self._diskSide
+                )
+                # and update the BAT block, by the way
+                if currentBlock >= lastBlockIndex:
+                    batBlocks[currentBlock].setupAsLastBlock(usageOfLastBlock)
+                else:
+                    batBlocks[currentBlock].linkTo(batBlocks[currentBlock + 1])
+            # write slice to sector
+            track.sectors[firstSector + currentSector].dataOfPayload = content[
+                currentSliceIndex : currentSliceIndex + 255
+            ]
+            if currentSector == 7:
+                # if last sector of block, bump current block
+                currentBlock = currentBlock + 1
+            # bump sector counter
+            currentSector = (currentSector + 1) % 8
+
+        # update BAT
+        self._bat = bat
+
+        firstBlock = batBlocks[0].id
+        entryRecord = CatalogEntryRecord(
+            name=name.upper(),
+            extension=extension.upper(),
+            typeOfFile=typeOfFile,
+            typeOfData=typeOfData,
+            firstBlock=batBlocks[0].id,
+            usageOfLastSector=usageOfLastSector,
+        )
+
+        # Find a free catalog entry and write the new entry
+        found = False
+        for s in range(2, 16):  # catalog is from sector 2 to 15 of track 20
+            catSector = bytearray(self._diskSide.tracks[20].sectors[s].dataOfPayload)
+            for start in range(0, 256, 32):  # a catalog entry every 32 bytes
+                entry = CatalogEntry.fromBytes(catSector[start : start + 32], bat)
+                if (
+                    entry.status == CatalogEntryStatus.NEVER_USED
+                    or entry.status == CatalogEntryStatus.DELETED
+                ):
+                    catSector[start : start + 32] = entryRecord.toBytes()
+                    self._diskSide.tracks[20].sectors[s].dataOfPayload = catSector
+                    found = True
+                    break
+            if found:
+                break
+
+        if not found:
+            # restore BAT
+            for b in batBlocks:
+                b.setFree()
+            self._bat = bat
+            raise ValueError("no.more.space.in.catalog")
 
     def computeUsage(self) -> FileSystemUsage:
         used = 0
