@@ -180,6 +180,14 @@ class DiskImageCliListenerQuiet:
         else:
             self._printReturnLineIfNeeded()
 
+    def onBeforeBeginOfFile(self, message: str):  # fully defined message
+        """Notify of a pre-processing happening before starting to work on a file"""
+        print(f"  {message}")
+
+    def onAfterEndOfFile(self, message: str):  # fully defined message
+        """Notify of a post-processing happening after having finished to work on a file"""
+        print(f"  {message}")
+
 
 class DiskImageCliListenerVerbose:
     def __init__(self, typeOfProcessing: TypeOfProcessing = TypeOfProcessing.LISTING):
@@ -280,3 +288,11 @@ class DiskImageCliListenerVerbose:
             if self._processing != TypeOfProcessing.LISTING:
                 print("ignored")
                 self._needReturnLine = False
+
+    def onBeforeBeginOfFile(self, message: str):  # fully defined message
+        """Notify of a pre-processing happening before starting to work on a file"""
+        print(f"  {message}")
+
+    def onAfterEndOfFile(self, message: str):  # fully defined message
+        """Notify of a post-processing happening after having finished to work on a file"""
+        print(f"  {message}")

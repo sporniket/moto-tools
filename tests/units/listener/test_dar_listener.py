@@ -90,10 +90,12 @@ def test_DiskImageCliListenerQuiet_should_output_expected_messages_for_listing()
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
+        l.onBeforeBeginOfFile("Pre-processing message !")
         l.onBeginOfFile(entryA)
         print("after begin of file", end="")
         l.onEndOfFile(entryA)
         print("after end of file", end="")
+        l.onAfterEndOfFile("Post-processing message !")
         l.onBeginOfFile(entryB)
         print("after begin of file", end="")
         l.onEndOfFile(entryB)
@@ -114,8 +116,10 @@ def test_DiskImageCliListenerQuiet_should_output_expected_messages_for_listing()
         assert (
             out.getvalue()
             == """Side 0
-after begin of side  A.Bafter begin of file
-after end of file  x.B (deleted)after begin of file
+after begin of side  Pre-processing message !
+  A.Bafter begin of file
+after end of file  Post-processing message !
+  x.B (deleted)after begin of file
 after end of file  (unused)after begin of file
 after end of fileafter end of sideSide 1
 after begin of side  A.Bafter begin of file
@@ -129,10 +133,12 @@ def test_DiskImageCliListenerQuiet_should_output_expected_messages_for_extractin
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
+        l.onBeforeBeginOfFile("Pre-processing message !")
         l.onBeginOfFile(entryA)
         print("after begin of file", end="")
         l.onEndOfFile(entryA)
         print("after end of file", end="")
+        l.onAfterEndOfFile("Post-processing message !")
         l.onBeginOfFile(entryB)
         print("after begin of file", end="")
         l.onEndOfFile(entryB)
@@ -153,8 +159,10 @@ def test_DiskImageCliListenerQuiet_should_output_expected_messages_for_extractin
         assert (
             out.getvalue()
             == """Side 0
-after begin of side  A.B...after begin of fileok
-after end of file  x.B (deleted)...after begin of fileignored
+after begin of side  Pre-processing message !
+  A.B...after begin of fileok
+after end of file  Post-processing message !
+  x.B (deleted)...after begin of fileignored
 after end of file  (unused)...after begin of fileignored
 after end of file1 file
 after end of side---
@@ -173,10 +181,12 @@ def test_DiskImageCliListenerQuiet_should_output_expected_messages_for_updating(
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
+        l.onBeforeBeginOfFile("Pre-processing message !")
         l.onBeginOfFile(entryA)
         print("after begin of file", end="")
         l.onEndOfFile(entryA)
         print("after end of file", end="")
+        l.onAfterEndOfFile("Post-processing message !")
         l.onBeginOfFile(entryB)
         print("after begin of file", end="")
         l.onEndOfFile(entryB)
@@ -197,8 +207,10 @@ def test_DiskImageCliListenerQuiet_should_output_expected_messages_for_updating(
         assert (
             out.getvalue()
             == """Side 0
-after begin of side  A.B...after begin of fileok
-after end of file  x.B (deleted)...after begin of fileignored
+after begin of side  Pre-processing message !
+  A.B...after begin of fileok
+after end of file  Post-processing message !
+  x.B (deleted)...after begin of fileignored
 after end of file  (unused)...after begin of fileignored
 after end of file1 file
 after end of side---
@@ -217,10 +229,12 @@ def test_DiskImageCliListenerVerbose_should_output_expected_messages_for_listing
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
+        l.onBeforeBeginOfFile("Pre-processing message !")
         l.onBeginOfFile(entryA)
         print("after begin of file", end="")
         l.onEndOfFile(entryA)
         print("after end of file", end="")
+        l.onAfterEndOfFile("Post-processing message !")
         l.onBeginOfFile(entryB)
         print("after begin of file", end="")
         l.onEndOfFile(entryB)
@@ -253,8 +267,10 @@ def test_DiskImageCliListenerVerbose_should_output_expected_messages_for_listing
         assert (
             out.getvalue()
             == """Side 0
-after begin of side  A       .B    BASIC   TOKEN   after begin of file    4600 Bytes      3 blocks
-after end of file  x       .B   (deleted)after begin of fileafter end of file
+after begin of side  Pre-processing message !
+  A       .B    BASIC   TOKEN   after begin of file    4600 Bytes      3 blocks
+after end of file  Post-processing message !
+  x       .B   (deleted)after begin of fileafter end of file
   C       .B    DATA    BINARY  after begin of file     130 Bytes      1 block 
 after end of file  D       .B    MODULE  BINARY  after begin of file    4000 Bytes      2 blocks
 after end of file  E       .TXT  TEXT    ASCII   after begin of file   13000 Bytes      7 blocks
@@ -273,10 +289,12 @@ def test_DiskImageCliListenerVerbose_should_output_expected_messages_for_extract
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
+        l.onBeforeBeginOfFile("Pre-processing message !")
         l.onBeginOfFile(entryA)
         print("after begin of file", end="")
         l.onEndOfFile(entryA)
         print("after end of file", end="")
+        l.onAfterEndOfFile("Post-processing message !")
         l.onBeginOfFile(entryB)
         print("after begin of file", end="")
         l.onEndOfFile(entryB)
@@ -309,8 +327,10 @@ def test_DiskImageCliListenerVerbose_should_output_expected_messages_for_extract
         assert (
             out.getvalue()
             == """Side 0
-after begin of side  A       .B    BASIC   TOKEN   ......after begin of file    4600 Bytes      3 blocks
-after end of file  x       .B   (deleted)        ......after begin of fileignored
+after begin of side  Pre-processing message !
+  A       .B    BASIC   TOKEN   ......after begin of file    4600 Bytes      3 blocks
+after end of file  Post-processing message !
+  x       .B   (deleted)        ......after begin of fileignored
 after end of file  C       .B    DATA    BINARY  ......after begin of file     130 Bytes      1 block 
 after end of file  D       .B    MODULE  BINARY  ......after begin of file    4000 Bytes      2 blocks
 after end of file  E       .TXT  TEXT    ASCII   ......after begin of file   13000 Bytes      7 blocks
@@ -332,10 +352,12 @@ def test_DiskImageCliListenerVerbose_should_output_expected_messages_for_updatin
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
+        l.onBeforeBeginOfFile("Pre-processing message !")
         l.onBeginOfFile(entryA)
         print("after begin of file", end="")
         l.onEndOfFile(entryA)
         print("after end of file", end="")
+        l.onAfterEndOfFile("Post-processing message !")
         l.onBeginOfFile(entryB)
         print("after begin of file", end="")
         l.onEndOfFile(entryB)
@@ -368,8 +390,10 @@ def test_DiskImageCliListenerVerbose_should_output_expected_messages_for_updatin
         assert (
             out.getvalue()
             == """Side 0
-after begin of side  A       .B    BASIC   TOKEN   ......after begin of file    4600 Bytes      3 blocks
-after end of file  x       .B   (deleted)        ......after begin of fileignored
+after begin of side  Pre-processing message !
+  A       .B    BASIC   TOKEN   ......after begin of file    4600 Bytes      3 blocks
+after end of file  Post-processing message !
+  x       .B   (deleted)        ......after begin of fileignored
 after end of file  C       .B    DATA    BINARY  ......after begin of file     130 Bytes      1 block 
 after end of file  D       .B    MODULE  BINARY  ......after begin of file    4000 Bytes      2 blocks
 after end of file  E       .TXT  TEXT    ASCII   ......after begin of file   13000 Bytes      7 blocks
