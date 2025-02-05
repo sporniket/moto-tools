@@ -73,11 +73,17 @@ ci = [
     "pytest>=8.2.2",
     "coverage>=7.6.0",
 ]
-scripting = [
-    "rich>=13.7.1",
-]
+
+[dependency-groups]
 build = [
     "pdm>=2.17.1",
     "pip>=24.1.2",
     "twine>=5.1.1",
+    "sphinx",
+]
+lint = ["black>=24.4.2", "flake8>=7.1.0", "removestar>=1.5"]
+ci = ["pytest>=8.2.2", "coverage>=7.6.0"]
+scripting = [
+    "rich>=13.7.1",
+    "sphinx>=8.1.3",
 ]
