@@ -70,7 +70,7 @@ def test_that_it_does_create_image_file():
         [os.path.join(source_dir, f) for f in COMMON_FILESET]
     )
     createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
-    baseArgs = ["prog", "--create", "--into", tmp_dir, createdImageFile]
+    baseArgs = ["prog", "--create", createdImageFile]
     sourceArgs = [
         FILE_A,
         FILE_B,
