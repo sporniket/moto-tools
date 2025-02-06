@@ -160,7 +160,9 @@ If not, see <https://www.gnu.org/licenses/>. 
 
         if args.create:
             raise RuntimeError("not.implemented.yet")
-            # TODO prepare working file -- optionnally using a reference archive file
+            # TODO new DiskImage
+            # TODO prepare each side (BAT, catalog) --> require a fs.prepare() ?
+            # TODO prepare side walker
             for src in sources:
                 dotPos = src.rfind(".")
                 fileName = os.path.basename(src.upper())
