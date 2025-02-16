@@ -84,25 +84,33 @@ If not, see <https://www.gnu.org/licenses/>. 
         commandGroup.add_argument(
             "-c",
             "--create",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="create",
             help=f"Assemble the designated files into the designated disk archive.",
         )
         commandGroup.add_argument(
             "-t",
             "--list",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="list",
             help=f"List all the files contained inside the designated disk archive.",
         )
         commandGroup.add_argument(
             "-x",
             "--extract",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="extract",
             help=f"Extract all the files contained inside the designated disk archive.",
         )
         commandGroup.add_argument(
             "-r",
             "--append",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="append",
             help=f"Add the designated files into the already existing designated disk archive.",
         )
 
@@ -122,25 +130,33 @@ If not, see <https://www.gnu.org/licenses/>. 
         return parser
 
     def __init__(self):
-        pass
+        typeOfArchive = TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+        self._workers = {
+            "create": DiskArchiveCreator(typeOfArchive),
+            "extract": DiskArchiveExtractor(typeOfArchive),
+            "list": DiskArchiveListor(typeOfArchive),
+        }
+        self._typesOfProcessing = {
+            "create": TypeOfProcessing.UPDATING,
+            "extract": TypeOfProcessing.EXTRACTING,
+            "list": TypeOfProcessing.LISTING,
+        }
 
-    def run(self) -> int:
-        args = DiskArchiveCli.createArgParser().parse_args()
-        sources = args.sources
-        typeOfProcessing = (
-            TypeOfProcessing.LISTING
-            if args.list
-            else (
-                TypeOfProcessing.EXTRACTING
-                if args.extract
-                else TypeOfProcessing.UPDATING
-            )
-        )
-        listener = (
+    def createListener(self, args):
+        if args.action not in self._typesOfProcessing:
+            raise RuntimeError(f"action.not.implemented.yet:{args.action}")
+        typeOfProcessing = self._typesOfProcessing[args.action]
+
+        return (
             DiskImageCliListenerVerbose(typeOfProcessing)
             if args.verbose
             else DiskImageCliListenerQuiet(typeOfProcessing)
         )
+
+    def run(self) -> int:
+        args = DiskArchiveCli.createArgParser().parse_args()
+
+        listener = self.createListener(args)
 
         ### assess type of archive
         archive = args.archive
@@ -153,15 +169,10 @@ If not, see <https://www.gnu.org/licenses/>. 
             raise ValueError(f"error.file.name.extension.should.be.sd:{archive}")
 
         ### process target folder
+        if args.action not in self._workers:
+            raise RuntimeError(f"action.not.implemented.yet:{args.action}")
 
-        if args.create:
-            DiskArchiveCreator(typeOfArchive).perform(args, listener)
-
-        elif args.extract:
-            DiskArchiveExtractor(typeOfArchive).perform(args, listener)
-
-        elif args.list:
-            DiskArchiveListor(typeOfArchive).perform(args, listener)
+        self._workers[args.action].perform(args, listener)
         return 0
 
 
@@ -250,6 +261,7 @@ class DiskArchiveCreator(DiskArchiveWorker):
         # TODO new DiskImage
         # TODO prepare each side (BAT, catalog) --> require a fs.prepare() ?
         # TODO prepare side walker
+        sources = args.sources
         for src in sources:
             dotPos = src.rfind(".")
             fileName = os.path.basename(src.upper())
