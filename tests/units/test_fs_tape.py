@@ -15,7 +15,7 @@ or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with MO/TO tools.
-If not, see <https://www.gnu.org/licenses/>. 
+If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
@@ -25,13 +25,13 @@ import pytest
 
 def test_TapeBlock_with_valid_leader_block():
     but = TapeBlock(
-        b"\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+        b"\x00\x10\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
     )
     assert but.isValid()
     assert but.type == TypeOfTapeBlock.LEADER
     assert but.length == 16
     assert but.checksum == 0x34
-    assert but.body == b"\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00"
+    assert but.body == b"\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00"
 
 
 def test_TapeBlock_with_valid_trailer_block():
@@ -59,7 +59,7 @@ def test_TapeBlock_with_valid_data_block():
 
 def test_TapeBlock_truncated_with_valid_checksum_should_be_invalid():
     but = TapeBlock(
-        b"\x00\x11\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+        b"\x00\x11\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
     )
     assert but.isValid() == False
 
@@ -80,7 +80,7 @@ def test_TapeBlock_with_length_byte_0_is_256_bytes_long():
 
 def test_TapeBlock_with_invalid_checksum_should_be_invalid():
     but = TapeBlock(
-        b"\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x33"
+        b"\x00\x10\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x33"
     )
     assert but.isValid() == False
 
@@ -88,13 +88,13 @@ def test_TapeBlock_with_invalid_checksum_should_be_invalid():
 def test_LeaderTapeBlockDescriptor_can_create_tape_bloc():
     assert (
         LeaderTapeBlockDescriptor("banner", "bas", 0, 0).toTapeBlock().rawData
-        == b"\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+        == b"\x00\x10\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
     )
 
 
 def test_LeaderTapeBlockDescriptor_can_be_build_from_tape_bloc():
     desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(
-        b"\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+        b"\x00\x10\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
     )
     assert desc.fileName == "BANNER"
     assert desc.fileExtension == "BAS"
@@ -105,9 +105,9 @@ def test_LeaderTapeBlockDescriptor_can_be_build_from_tape_bloc():
 def test_TapeBlock_build_from_data():
     assert (
         TapeBlock.buildFromData(
-            b"\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00"
+            b"\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00"
         ).rawData
-        == b"\x01\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+        == b"\x01\x10\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
     )
 
 
@@ -116,26 +116,26 @@ def test_Tape_next_block_returns_next_block_until_no_more_bloc():
     tape = Tape(tapeData)
     assert (
         tape.nextBlock().rawData
-        == b"\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+        == b"\x00\x10\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
     )
     assert tape.nextBlock() is None
 
 
 def test_Tape_next_block_returns_block_when_there_is_enough_ones_before_3c5a():
     block = Tape(
-        b"\x01\x01\x01\x3c\x5a\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+        b"\x01\x01\x01\x3c\x5a\x00\x10\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
     ).nextBlock()
     assert block is not None
     assert (
         block.rawData
-        == b"\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+        == b"\x00\x10\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
     )
 
 
 def test_Tape_next_block_returns_nothing_when_there_is_not_enough_ones_before_3c5a():
     assert (
         Tape(
-            b"\x01\x01\x3c\x5a\x00\x10\x42\x41\x4E\x4E\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
+            b"\x01\x01\x3c\x5a\x00\x10\x42\x41\x4e\x4e\x45\x52\x20\x20\x42\x41\x53\x00\x00\x00\x34"
         ).nextBlock()
         is None
     )
