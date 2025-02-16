@@ -15,7 +15,7 @@ or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with MO/TO tools.
-If not, see <https://www.gnu.org/licenses/>. 
+If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
@@ -153,89 +153,130 @@ If not, see <https://www.gnu.org/licenses/>. 
             raise ValueError(f"error.file.name.extension.should.be.sd:{archive}")
 
         ### process target folder
+
+        if args.create:
+            DiskArchiveCreator(typeOfArchive).perform(args, listener)
+
+        elif args.extract:
+            DiskArchiveExtractor(typeOfArchive).perform(args, listener)
+
+        elif args.list:
+            DiskArchiveListor(typeOfArchive).perform(args, listener)
+        return 0
+
+
+class DiskArchiveWorker:
+    """Base class to an implementation working on a disk archive."""
+
+    def __init__(self, typeOfDiskImage: TypeOfDiskImage):
+        if typeOfDiskImage is None:
+            raise ValueError("error.undefined.type.of.disk.image")
+        self._typeOfDiskImage = typeOfDiskImage
+
+    def perform(
+        self, args, listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose
+    ):
+        pass
+
+
+class DiskArchiveListor(DiskArchiveWorker):
+    def __init__(self, typeOfDiskImage: TypeOfDiskImage):
+        super().__init__(typeOfDiskImage)
+
+    def perform(
+        self, args, listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose
+    ):
+        with open(args.archive, "rb") as sdar:
+            disk = DiskImage(
+                sdar.read(), typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            )
+
+            for i, side in enumerate(disk.sides):
+                listener.onBeginOfSide(i)
+                controller = FileSystemController(side)
+                for entry in controller.listFiles():
+                    file = entry.toDict()
+                    listener.onBeginOfFile(file)
+                    listener.onEndOfFile(file)
+                listener.onEndOfSide(controller.computeUsage())
+            listener.onDone()
+
+
+class DiskArchiveExtractor(DiskArchiveWorker):
+    def __init__(self, typeOfDiskImage: TypeOfDiskImage):
+        super().__init__(typeOfDiskImage)
+
+    def perform(
+        self, args, listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose
+    ):
         hasTargetDirectory = args.into is not None
         if args.into is not None:
             print(f"has into : {args.into}")
             # TODO
 
-        if args.create:
-            raise RuntimeError("not.implemented.yet")
-            # TODO new DiskImage
-            # TODO prepare each side (BAT, catalog) --> require a fs.prepare() ?
-            # TODO prepare side walker
-            for src in sources:
-                dotPos = src.rfind(".")
-                fileName = os.path.basename(src.upper())
-                fileExtension = ""
-                fileType = TypeOfDiskFile.BASIC_DATA
-                if dotPos > -1:
-                    fileName = os.path.basename(src[0:dotPos].upper())
-                    if len(fileName) > 8:
-                        fileName = fileName[0:8]
-                    fileExtension = src[dotPos + 1 :].upper()
-                    if fileExtension == "BAS,A":
-                        fileExtension = "BAS"
-                        fileType = 0  # basic
-                        fileMode = 0xFFFF  # -1, ascii listing
-                        src = src[:-2]
-                    elif fileExtension == "BAS":
-                        fileType = 0  # basic
-                    elif fileType == "LST":
-                        # TODO converts on the fly into ASCII BAS ?
-                        pass
-                    # TODO other things ?
-                try:
-                    # TODO write file into blocs
-                    # TODO commit file into FAT and CATALOG
-                    raise OverflowError("WRITE NOT IMPLEMENTED")
-                except OverflowError:
-                    print("Too much data, abort creation.")
-                    return 1
-            with open(args.archive, "wb") as sdar:
-                sdar.write(disk.rawData)
-
-        elif args.extract:
-            targetDir = (
-                args.into if hasTargetDirectory else os.path.dirname(args.archive)
+        targetDir = args.into if hasTargetDirectory else os.path.dirname(args.archive)
+        with open(args.archive, "rb") as sdar:
+            disk = DiskImage(
+                sdar.read(), typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
             )
-            with open(args.archive, "rb") as sdar:
-                disk = DiskImage(
-                    sdar.read(), typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
-                )
 
-                for i, side in enumerate(disk.sides):
-                    listener.onBeginOfSide(i)
-                    sidePath = os.path.join(targetDir, f"side{i}")
-                    os.makedirs(sidePath)
-                    controller = FileSystemController(side)
-                    for entry in controller.listFiles():
-                        file = entry.toDict()
-                        listener.onBeginOfFile(file)
-                        extractedFileName = (
-                            file["name"].rstrip() + "." + file["extension"].rstrip()
-                        )
-                        data = controller.readFile(entry)
-                        with open(
-                            os.path.join(sidePath, extractedFileName), "wb"
-                        ) as outf:
-                            outf.write(data)
-                        listener.onEndOfFile(file)
-                    listener.onEndOfSide(controller.computeUsage())
-                listener.onDone()
+            for i, side in enumerate(disk.sides):
+                listener.onBeginOfSide(i)
+                sidePath = os.path.join(targetDir, f"side{i}")
+                os.makedirs(sidePath)
+                controller = FileSystemController(side)
+                for entry in controller.listFiles():
+                    file = entry.toDict()
+                    listener.onBeginOfFile(file)
+                    extractedFileName = (
+                        file["name"].rstrip() + "." + file["extension"].rstrip()
+                    )
+                    data = controller.readFile(entry)
+                    with open(os.path.join(sidePath, extractedFileName), "wb") as outf:
+                        outf.write(data)
+                    listener.onEndOfFile(file)
+                listener.onEndOfSide(controller.computeUsage())
+            listener.onDone()
 
-        elif args.list:
-            with open(args.archive, "rb") as sdar:
-                disk = DiskImage(
-                    sdar.read(), typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
-                )
 
-                for i, side in enumerate(disk.sides):
-                    listener.onBeginOfSide(i)
-                    controller = FileSystemController(side)
-                    for entry in controller.listFiles():
-                        file = entry.toDict()
-                        listener.onBeginOfFile(file)
-                        listener.onEndOfFile(file)
-                    listener.onEndOfSide(controller.computeUsage())
-                listener.onDone()
-        return 0
+class DiskArchiveCreator(DiskArchiveWorker):
+    def __init__(self, typeOfDiskImage: TypeOfDiskImage):
+        super().__init__(typeOfDiskImage)
+
+    def perform(
+        self, args, listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose
+    ):
+        raise RuntimeError("not.implemented.yet")
+        # TODO new DiskImage
+        # TODO prepare each side (BAT, catalog) --> require a fs.prepare() ?
+        # TODO prepare side walker
+        for src in sources:
+            dotPos = src.rfind(".")
+            fileName = os.path.basename(src.upper())
+            fileExtension = ""
+            fileType = TypeOfDiskFile.BASIC_DATA
+            if dotPos > -1:
+                fileName = os.path.basename(src[0:dotPos].upper())
+                if len(fileName) > 8:
+                    fileName = fileName[0:8]
+                fileExtension = src[dotPos + 1 :].upper()
+                if fileExtension == "BAS,A":
+                    fileExtension = "BAS"
+                    fileType = 0  # basic
+                    fileMode = 0xFFFF  # -1, ascii listing
+                    src = src[:-2]
+                elif fileExtension == "BAS":
+                    fileType = 0  # basic
+                elif fileType == "LST":
+                    # TODO converts on the fly into ASCII BAS ?
+                    pass
+                # TODO other things ?
+            try:
+                # TODO write file into blocs
+                # TODO commit file into FAT and CATALOG
+                raise OverflowError("WRITE NOT IMPLEMENTED")
+            except OverflowError:
+                print("Too much data, abort creation.")
+                return 1
+        with open(args.archive, "wb") as sdar:
+            sdar.write(disk.rawData)
