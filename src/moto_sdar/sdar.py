@@ -257,6 +257,11 @@ class DiskArchiveCreator(DiskArchiveWorker):
     def perform(
         self, args, listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose
     ):
+        image = DiskImage(bytes(), typeOfDiskImage=self._typeOfDiskImage)
+        controllers = [FileSystemController(image.sides[i]) for i in range(4)]
+        for c in controllers:
+            raise RuntimeError("format side not implemented !")
+
         raise RuntimeError("not.implemented.yet")
         # TODO new DiskImage
         # TODO prepare each side (BAT, catalog) --> require a fs.prepare() ?
