@@ -28,7 +28,7 @@ from .catalog import (
     TypeOfDiskFile,
     TypeOfData,
 )
-from .block_allocation import BlockAllocation
+from .block_allocation import BlockAllocation, BlockStatus
 
 RESERVED_BLOCKS = [0, 40, 41]
 
@@ -239,14 +239,17 @@ class FileSystemController:
 
     def initFileSystem(self):
         # reset bat
-        bat = self._bat
-
-        for i, b in enumerate(bat):
-            if b.id in [0, 40, 41]:
-                b.reserve()
-            else:
-                b.setFree()
-
+        bat = [
+            BlockAllocation(
+                i,
+                (
+                    BlockStatus.RESERVED.value
+                    if i in RESERVED_BLOCKS
+                    else BlockStatus.FREE.value
+                ),
+            )
+            for i in range(160)
+        ]
         self._bat = bat
 
         # fill catalog sectors with 0xff

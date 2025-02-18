@@ -28,6 +28,7 @@ from enum import Enum
 
 from moto_lib.fs_disk.controller import FileSystemController
 from moto_lib.fs_disk.image import DiskImage, DiskSide, TypeOfDiskImage
+from moto_lib.fs_disk.catalog import TypeOfDiskFile, TypeOfData
 from moto_lib.listener.dar_listener import (
     DiskImageCliListenerQuiet,
     DiskImageCliListenerVerbose,
@@ -260,40 +261,60 @@ class DiskArchiveCreator(DiskArchiveWorker):
         image = DiskImage(bytes(), typeOfDiskImage=self._typeOfDiskImage)
         controllers = [FileSystemController(image.sides[i]) for i in range(4)]
         for c in controllers:
-            raise RuntimeError("format side not implemented !")
+            c.initFileSystem()
 
-        raise RuntimeError("not.implemented.yet")
-        # TODO new DiskImage
-        # TODO prepare each side (BAT, catalog) --> require a fs.prepare() ?
-        # TODO prepare side walker
+        currentSide = 0
         sources = args.sources
         for src in sources:
             dotPos = src.rfind(".")
             fileName = os.path.basename(src.upper())
             fileExtension = ""
+            # by default a file is binary data
             fileType = TypeOfDiskFile.BASIC_DATA
+            fileMode = TypeOfData.BINARY_DATA
             if dotPos > -1:
                 fileName = os.path.basename(src[0:dotPos].upper())
+                if fileName == "--EOS":
+                    currentSide = currentSide + 1
+                    continue
                 if len(fileName) > 8:
                     fileName = fileName[0:8]
                 fileExtension = src[dotPos + 1 :].upper()
+                # TODO implement a filter chain, that MAY alter the content/name of the target filename (lst)
                 if fileExtension == "BAS,A":
+                    fileType = TypeOfDiskFile.BASIC_PROGRAM
+                    fileMode = TypeOfData.ASCII_DATA
                     fileExtension = "BAS"
-                    fileType = 0  # basic
-                    fileMode = 0xFFFF  # -1, ascii listing
                     src = src[:-2]
                 elif fileExtension == "BAS":
-                    fileType = 0  # basic
-                elif fileType == "LST":
-                    # TODO converts on the fly into ASCII BAS ?
-                    pass
+                    fileType = TypeOfDiskFile.BASIC_PROGRAM
+                    fileType = TypeOfData.ASCII_DATA
+                elif fileExtension == "LST":
+                    fileType = TypeOfDiskFile.BASIC_PROGRAM
+                    fileMode = TypeOfData.ASCII_DATA
+                    # TODO converts on the fly into ASCII BAS
+                elif fileExtension == "TXT":
+                    fileType = TypeOfDiskFile.TEXT_FILE
+                    fileMode = TypeOfData.ASCII_DATA
+                elif fileExtension == "BIN":
+                    fileType = TypeOfDiskFile.MACHINE_LANGUAGE_PROGRAM
                 # TODO other things ?
-            try:
-                # TODO write file into blocs
-                # TODO commit file into FAT and CATALOG
-                raise OverflowError("WRITE NOT IMPLEMENTED")
-            except OverflowError:
-                print("Too much data, abort creation.")
-                return 1
+            # TODO read file data
+            fileData = bytes([1])  # FIXME !!!
+            while currentSide < 4:  # Still have side to try
+                try:
+                    controllers[currentSide].writeFile(
+                        fileData,
+                        fileName,
+                        fileExtension,
+                        typeOfFile=fileType,
+                        typeOfData=fileMode,
+                    )
+                except ValueError:
+                    # not enough place, try next side
+                    currentSide = currentSide + 1
         with open(args.archive, "wb") as sdar:
-            sdar.write(disk.rawData)
+            for s in image.sides:
+                for t in s.tracks:
+                    for sector in t.sectors:
+                        sdar.write(sector.dataOfSector)
