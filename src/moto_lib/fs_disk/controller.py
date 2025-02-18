@@ -30,6 +30,8 @@ from .catalog import (
 )
 from .block_allocation import BlockAllocation
 
+RESERVED_BLOCKS = [0, 40, 41]
+
 
 def _computeRequiredSlots(sizeOfData: int, sizeOfSlot: int) -> (int, int):
     requiredSlots = sizeOfData // sizeOfSlot
@@ -234,6 +236,23 @@ class FileSystemController:
                 b.setFree()
             self._bat = bat
             raise ValueError("no.more.space.in.catalog")
+
+    def initFileSystem(self):
+        # reset bat
+        bat = self._bat
+
+        for i, b in enumerate(bat):
+            if b.id in [0, 40, 41]:
+                b.reserve()
+            else:
+                b.setFree()
+
+        self._bat = bat
+
+        # fill catalog sectors with 0xff
+        empty_sector = bytes([0xFF for i in range(256)])
+        for s in range(2, 16):  # catalog is from sector 2 to 15 of track 20
+            self._diskSide.tracks[20].sectors[s].dataOfPayload = empty_sector
 
     def computeUsage(self) -> FileSystemUsage:
         used = 0
