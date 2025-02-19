@@ -154,6 +154,18 @@ class DiskImageCliListenerQuiet:
     def onBeginOfFile(
         self, data: dict[str, any]  # as provided by CatalogEntry.toDict()
     ):
+        """Process 'begin of file' events.
+
+        The event MUST contains following properties :
+        * `status` : CatalogEntryStatus.name of the file
+        * `name` : the file name (8 chars at most)
+        * `extension` : the file extension (3 chars at most)
+        * `typeOfFile` : TypeOfFile.toStringForCatalog()
+        * `typeOfData` : TypeOfData.toStringForCatalog()
+
+        Args:
+            data (dict[str, any]): The event description
+        """
         self._counter.onBeginOfFile(data)
 
         self._printReturnLineIfNeeded()
@@ -170,6 +182,16 @@ class DiskImageCliListenerQuiet:
         self._needReturnLine = True
 
     def onEndOfFile(self, data: dict[str, any]):  # as provided by CatalogEntry.toDict()
+        """Process 'end of file' events.
+
+        The event MUST contains following properties :
+        * `status` : CatalogEntryStatus.name of the file
+        * `sizeInBytes` : size in bytes
+        * `sizeInBlocks` : size in blocks
+
+        Args:
+            data (dict[str, any]): The event description
+        """
         self._counter.onEndOfFile(data)
 
         fileIsAlive = data["status"] == CatalogEntryStatus.ALIVE.name
@@ -254,6 +276,18 @@ class DiskImageCliListenerVerbose:
     def onBeginOfFile(
         self, data: dict[str, any]  # as provided by CatalogEntry.toDict()
     ):
+        """Process 'begin of file' events.
+
+        The event MUST contains following properties :
+        * `status` : CatalogEntryStatus.name of the file
+        * `name` : the file name (8 chars at most)
+        * `extension` : the file extension (3 chars at most)
+        * `typeOfFile` : TypeOfFile.toStringForCatalog()
+        * `typeOfData` : TypeOfData.toStringForCatalog()
+
+        Args:
+            data (dict[str, any]): The event description
+        """
         self._counter.onBeginOfFile(data)
         isListing = self._processing == TypeOfProcessing.LISTING
 
@@ -274,6 +308,16 @@ class DiskImageCliListenerVerbose:
         self._needReturnLine = True
 
     def onEndOfFile(self, data: dict[str, any]):  # as provided by CatalogEntry.toDict()
+        """Process 'end of file' events.
+
+        The event MUST contains following properties :
+        * `status` : CatalogEntryStatus.name of the file
+        * `sizeInBytes` : size in bytes
+        * `sizeInBlocks` : size in blocks
+
+        Args:
+            data (dict[str, any]): The event description
+        """
         self._counter.onEndOfFile(data)
 
         fileIsAlive = data["status"] == CatalogEntryStatus.ALIVE.name

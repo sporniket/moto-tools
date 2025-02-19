@@ -28,7 +28,7 @@ from enum import Enum
 
 from moto_lib.fs_disk.controller import FileSystemController
 from moto_lib.fs_disk.image import DiskImage, DiskSide, TypeOfDiskImage
-from moto_lib.fs_disk.catalog import TypeOfDiskFile, TypeOfData
+from moto_lib.fs_disk.catalog import TypeOfDiskFile, TypeOfData, CatalogEntryStatus
 from moto_lib.listener.dar_listener import (
     DiskImageCliListenerQuiet,
     DiskImageCliListenerVerbose,
@@ -264,6 +264,7 @@ class DiskArchiveCreator(DiskArchiveWorker):
             c.initFileSystem()
 
         currentSide = 0
+        listener.onBeginOfSide(currentSide)
         sources = args.sources
         for src in sources:
             dotPos = src.rfind(".")
@@ -288,7 +289,7 @@ class DiskArchiveCreator(DiskArchiveWorker):
                     src = src[:-2]
                 elif fileExtension == "BAS":
                     fileType = TypeOfDiskFile.BASIC_PROGRAM
-                    fileType = TypeOfData.ASCII_DATA
+                    fileMode = TypeOfData.ASCII_DATA
                 elif fileExtension == "LST":
                     fileType = TypeOfDiskFile.BASIC_PROGRAM
                     fileMode = TypeOfData.ASCII_DATA
@@ -299,22 +300,82 @@ class DiskArchiveCreator(DiskArchiveWorker):
                 elif fileExtension == "BIN":
                     fileType = TypeOfDiskFile.MACHINE_LANGUAGE_PROGRAM
                 # TODO other things ?
-            # TODO read file data
-            fileData = bytes([1])  # FIXME !!!
-            while currentSide < 4:  # Still have side to try
-                try:
-                    controllers[currentSide].writeFile(
-                        fileData,
-                        fileName,
-                        fileExtension,
-                        typeOfFile=fileType,
-                        typeOfData=fileMode,
-                    )
-                except ValueError:
-                    # not enough place, try next side
-                    currentSide = currentSide + 1
+            # notify event
+            with open(src, "rb") as sourceFile:
+                fileData = sourceFile.read()
+            currentSide = self.writeFile(
+                currentSide,
+                listener,
+                fileName,
+                fileExtension,
+                fileType,
+                fileMode,
+                controllers,
+                fileData,
+            )
+            if currentSide >= 4:  # cannot write anymore
+                break
+        if currentSide < 4:  # Successfully wrote all the files
+            listener.onEndOfSide(controllers[currentSide].computeUsage())
+            currentSide = currentSide + 1
+            while currentSide < 4:  # skip all remaining sides
+                listener.onBeginOfSide(currentSide)
+                listener.onEndOfSide(controllers[currentSide].computeUsage())
+                currentSide = currentSide + 1
+
         with open(args.archive, "wb") as sdar:
             for s in image.sides:
                 for t in s.tracks:
                     for sector in t.sectors:
                         sdar.write(sector.dataOfSector)
+
+        listener.onDone()
+
+    def writeFile(
+        self,
+        currentSide: int,
+        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        fileName: str,
+        fileExtension: str,
+        fileType: TypeOfDiskFile,
+        fileMode: TypeOfData,
+        controllers,
+        fileData: bytes,
+    ) -> int:
+        while currentSide < 4:  # Still have side to try
+            try:
+                listener.onBeginOfFile(
+                    {
+                        "status": CatalogEntryStatus.ALIVE.name,
+                        "name": fileName,
+                        "extension": fileExtension,
+                        "typeOfFile": fileType.toStringForCatalog(),
+                        "typeOfData": fileMode.toStringForCatalog(fileType),
+                    }
+                )
+                controllers[currentSide].writeFile(
+                    fileData,
+                    fileName,
+                    fileExtension,
+                    typeOfFile=fileType,
+                    typeOfData=fileMode,
+                )
+                sizeInBytes = len(fileData)
+                fullBlocks, moduloBlocks = len(fileData) // 255, len(fileData) % 255
+                sizeInBlocks = fullBlocks if moduloBlocks == 0 else fullBlocks + 1
+                listener.onEndOfFile(
+                    {
+                        "status": CatalogEntryStatus.ALIVE.name,
+                        "sizeInBytes": sizeInBytes,
+                        "sizeInBlocks": sizeInBlocks,
+                    }
+                )
+                break  # done, no need to retry
+            except ValueError:
+                # not enough place, try next side
+                listener.onEndOfSide(controllers[currentSide].computeUsage())
+                currentSide = currentSide + 1
+                if currentSide >= 4:  # cannot try anymore
+                    break
+                listener.onBeginOfSide(currentSide)
+        return currentSide

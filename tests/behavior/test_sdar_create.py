@@ -79,7 +79,9 @@ def test_that_it_does_create_image_file():
         FILE_E,
         FILE_F,
     ]
-    with patch.object(sys, "argv", baseArgs + sourceArgs):
+    with patch.object(
+        sys, "argv", baseArgs + [os.path.join(tmp_dir, f) for f in sourceArgs]
+    ):
         with redirect_stdout(io.StringIO()) as out:
             returnCode = DiskArchiveCli().run()
         assert returnCode == 0
