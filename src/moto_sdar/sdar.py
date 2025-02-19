@@ -255,16 +255,50 @@ class DiskArchiveCreator(DiskArchiveWorker):
     def __init__(self, typeOfDiskImage: TypeOfDiskImage):
         super().__init__(typeOfDiskImage)
 
+    def _prepareControllers(self, image: DiskImage):
+        """Prepare internal state about the file system controller to use.
+
+        Args:
+            image (DiskImage): _description_
+        """
+        self._controllers = [FileSystemController(image.sides[i]) for i in range(4)]
+        for c in self._controllers:
+            c.initFileSystem()
+
+        self._currentSide = 0
+
+    @property
+    def _controller(self) -> FileSystemController:
+        if self._controllers is None:
+            raise RuntimeError("illegal.state")
+        if not self._hasController():
+            raise RuntimeError("illegal.state")
+        return self._controllers[self._currentSide]
+
+    def _hasController(self) -> bool:
+        if self._controllers is None:
+            raise RuntimeError("illegal.state")
+        if self._currentSide is None:
+            raise RuntimeError("illegal.state")
+        return self._currentSide < 4
+
+    def _hasNextController(self) -> bool:
+        if self._controllers is None:
+            raise RuntimeError("illegal.state")
+        if self._currentSide is None:
+            raise RuntimeError("illegal.state")
+        return (self._currentSide + 1) < 4
+
+    def _nextController(self):
+        self._currentSide = self._currentSide + 1
+
     def perform(
         self, args, listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose
     ):
         image = DiskImage(bytes(), typeOfDiskImage=self._typeOfDiskImage)
-        controllers = [FileSystemController(image.sides[i]) for i in range(4)]
-        for c in controllers:
-            c.initFileSystem()
+        self._prepareControllers(image)
 
-        currentSide = 0
-        listener.onBeginOfSide(currentSide)
+        listener.onBeginOfSide(self._currentSide)
         sources = args.sources
         for src in sources:
             dotPos = src.rfind(".")
@@ -276,7 +310,9 @@ class DiskArchiveCreator(DiskArchiveWorker):
             if dotPos > -1:
                 fileName = os.path.basename(src[0:dotPos].upper())
                 if fileName == "--EOS":
-                    currentSide = currentSide + 1
+                    self._nextController()
+                    if not self._hasController():
+                        break
                     continue
                 if len(fileName) > 8:
                     fileName = fileName[0:8]
@@ -303,25 +339,22 @@ class DiskArchiveCreator(DiskArchiveWorker):
             # notify event
             with open(src, "rb") as sourceFile:
                 fileData = sourceFile.read()
-            currentSide = self.writeFile(
-                currentSide,
+            self.writeFile(
                 listener,
                 fileName,
                 fileExtension,
                 fileType,
                 fileMode,
-                controllers,
                 fileData,
             )
-            if currentSide >= 4:  # cannot write anymore
+            if not self._hasController():  # cannot write anymore
                 break
-        if currentSide < 4:  # Successfully wrote all the files
-            listener.onEndOfSide(controllers[currentSide].computeUsage())
-            currentSide = currentSide + 1
-            while currentSide < 4:  # skip all remaining sides
-                listener.onBeginOfSide(currentSide)
-                listener.onEndOfSide(controllers[currentSide].computeUsage())
-                currentSide = currentSide + 1
+        if self._hasController():  # Successfully wrote all the files
+            listener.onEndOfSide(self._controller.computeUsage())
+            while self._hasNextController():
+                self._nextController()
+                listener.onBeginOfSide(self._currentSide)
+                listener.onEndOfSide(self._controller.computeUsage())
 
         with open(args.archive, "wb") as sdar:
             for s in image.sides:
@@ -333,16 +366,14 @@ class DiskArchiveCreator(DiskArchiveWorker):
 
     def writeFile(
         self,
-        currentSide: int,
         listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
         fileName: str,
         fileExtension: str,
         fileType: TypeOfDiskFile,
         fileMode: TypeOfData,
-        controllers,
         fileData: bytes,
     ) -> int:
-        while currentSide < 4:  # Still have side to try
+        while self._hasController():  # Still have side to try
             try:
                 listener.onBeginOfFile(
                     {
@@ -353,7 +384,7 @@ class DiskArchiveCreator(DiskArchiveWorker):
                         "typeOfData": fileMode.toStringForCatalog(fileType),
                     }
                 )
-                controllers[currentSide].writeFile(
+                self._controller.writeFile(
                     fileData,
                     fileName,
                     fileExtension,
@@ -373,9 +404,8 @@ class DiskArchiveCreator(DiskArchiveWorker):
                 break  # done, no need to retry
             except ValueError:
                 # not enough place, try next side
-                listener.onEndOfSide(controllers[currentSide].computeUsage())
-                currentSide = currentSide + 1
-                if currentSide >= 4:  # cannot try anymore
+                listener.onEndOfSide(self._controller.computeUsage())
+                self._nextController()
+                if not self._hasController():  # cannot try anymore
                     break
-                listener.onBeginOfSide(currentSide)
-        return currentSide
+                listener.onBeginOfSide(self._currentSide)
