@@ -255,6 +255,16 @@ class DiskArchiveCreator(DiskArchiveWorker):
     def __init__(self, typeOfDiskImage: TypeOfDiskImage):
         super().__init__(typeOfDiskImage)
 
+        # setup dispatching to processor according to file extension
+        self._defaultProcessors = self.processFileAsDataForBasic
+        self._processors = {
+            "BAS": self.processFileAsTokenizedBasic,
+            "BAS,A": self.processFileAsAsciiBasic,
+            "BIN": self.processFileAsBinaryModule,
+            "LST": self.processFileAsListingAsciiBasic,
+            "TXT": self.processFileAsTxt,
+        }
+
     def _prepareControllers(self, image: DiskImage):
         """Prepare internal state about the file system controller to use.
 
@@ -299,63 +309,51 @@ class DiskArchiveCreator(DiskArchiveWorker):
         self._prepareControllers(image)
 
         listener.onBeginOfSide(self._currentSide)
-        sources = args.sources
-        for src in sources:
+        for src in args.sources:
             dotPos = src.rfind(".")
             fileName = os.path.basename(src.upper())
-            fileExtension = ""
-            # by default a file is binary data
-            fileType = TypeOfDiskFile.BASIC_DATA
-            fileMode = TypeOfData.BINARY_DATA
-            if dotPos > -1:
-                fileName = os.path.basename(src[0:dotPos].upper())
-                if fileName == "--EOS":
-                    self._nextController()
-                    if not self._hasController():
-                        break
-                    continue
-                if len(fileName) > 8:
-                    fileName = fileName[0:8]
-                fileExtension = src[dotPos + 1 :].upper()
-                # TODO implement a filter chain, that MAY alter the content/name of the target filename (lst)
-                if fileExtension == "BAS,A":
-                    fileType = TypeOfDiskFile.BASIC_PROGRAM
-                    fileMode = TypeOfData.ASCII_DATA
-                    fileExtension = "BAS"
-                    src = src[:-2]
-                elif fileExtension == "BAS":
-                    fileType = TypeOfDiskFile.BASIC_PROGRAM
-                    fileMode = TypeOfData.ASCII_DATA
-                elif fileExtension == "LST":
-                    fileType = TypeOfDiskFile.BASIC_PROGRAM
-                    fileMode = TypeOfData.ASCII_DATA
-                    # TODO converts on the fly into ASCII BAS
-                elif fileExtension == "TXT":
-                    fileType = TypeOfDiskFile.TEXT_FILE
-                    fileMode = TypeOfData.ASCII_DATA
-                elif fileExtension == "BIN":
-                    fileType = TypeOfDiskFile.MACHINE_LANGUAGE_PROGRAM
-                # TODO other things ?
-            # notify event
+
+            # Either manage user decided change of side...
+            if fileName == "--EOS":
+                self._nextController()
+                if not self._hasController():
+                    break
+                continue
+
+            # ...or process a file
+            if not os.path.exists(src):
+                listener.onBeforeBeginOfFile(f"not.found:{src}")
+                continue
+
             with open(src, "rb") as sourceFile:
                 fileData = sourceFile.read()
-            self.writeFile(
-                listener,
-                fileName,
-                fileExtension,
-                fileType,
-                fileMode,
-                fileData,
-            )
+
+            # dispatch to a processor
+            process = self._defaultProcessors
+            if dotPos > -1:
+                fileName = os.path.basename(src[0:dotPos].upper())
+                fileExtension = src[dotPos + 1 :].upper()
+            if len(fileName) > 8:
+                fileName = fileName[0:8]
+
+            if fileExtension in self._processors:
+                process = self._processors[fileExtension]
+
+            process(listener, fileName, fileExtension, fileData)
+
             if not self._hasController():  # cannot write anymore
                 break
+
         if self._hasController():  # Successfully wrote all the files
             listener.onEndOfSide(self._controller.computeUsage())
+
+            # goes over each remaining side in order to get expected messages
             while self._hasNextController():
                 self._nextController()
                 listener.onBeginOfSide(self._currentSide)
                 listener.onEndOfSide(self._controller.computeUsage())
 
+        # Finally write the image
         with open(args.archive, "wb") as sdar:
             for s in image.sides:
                 for t in s.tracks:
@@ -363,6 +361,103 @@ class DiskArchiveCreator(DiskArchiveWorker):
                         sdar.write(sector.dataOfSector)
 
         listener.onDone()
+
+    def processFileAsTxt(
+        self,
+        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        fileName: str,
+        fileExtension: str,
+        fileData: bytes,
+    ) -> int:
+        self.writeFile(
+            listener,
+            fileName,
+            fileExtension,
+            TypeOfDiskFile.TEXT_FILE,
+            TypeOfData.ASCII_DATA,
+            fileData,
+        )
+
+    def processFileAsBinaryModule(
+        self,
+        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        fileName: str,
+        fileExtension: str,
+        fileData: bytes,
+    ) -> int:
+        self.writeFile(
+            listener,
+            fileName,
+            fileExtension,
+            TypeOfDiskFile.MACHINE_LANGUAGE_PROGRAM,
+            TypeOfData.BINARY_DATA,
+            fileData,
+        )
+
+    def processFileAsTokenizedBasic(
+        self,
+        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        fileName: str,
+        fileExtension: str,
+        fileData: bytes,
+    ) -> int:
+        self.writeFile(
+            listener,
+            fileName,
+            fileExtension,
+            TypeOfDiskFile.BASIC_PROGRAM,
+            TypeOfData.BINARY_DATA,
+            fileData,
+        )
+
+    def processFileAsAsciiBasic(
+        self,
+        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        fileName: str,
+        fileExtension: str,
+        fileData: bytes,
+    ) -> int:
+        self.writeFile(
+            listener,
+            fileName,
+            "BAS",
+            TypeOfDiskFile.BASIC_PROGRAM,
+            TypeOfData.ASCII_DATA,
+            fileData,
+        )
+
+    def processFileAsListingAsciiBasic(
+        self,
+        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        fileName: str,
+        fileExtension: str,
+        fileData: bytes,
+    ) -> int:
+        processedData = fileData  # TODO convert on the fly into ASCII BASIC (lst2bas)
+        self.writeFile(
+            listener,
+            fileName,
+            "BAS",
+            TypeOfDiskFile.BASIC_PROGRAM,
+            TypeOfData.ASCII_DATA,
+            fileData,
+        )
+
+    def processFileAsDataForBasic(
+        self,
+        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        fileName: str,
+        fileExtension: str,
+        fileData: bytes,
+    ) -> int:
+        self.writeFile(
+            listener,
+            fileName,
+            fileExtension,
+            TypeOfDiskFile.BASIC_DATA,
+            TypeOfData.BINARY_DATA,
+            fileData,
+        )
 
     def writeFile(
         self,
@@ -372,7 +467,7 @@ class DiskArchiveCreator(DiskArchiveWorker):
         fileType: TypeOfDiskFile,
         fileMode: TypeOfData,
         fileData: bytes,
-    ) -> int:
+    ):
         while self._hasController():  # Still have side to try
             try:
                 listener.onBeginOfFile(
