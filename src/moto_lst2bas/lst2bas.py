@@ -227,103 +227,130 @@ If not, see <https://www.gnu.org/licenses/>. 
     return parser
 
 
-class ListingToBasicCli:
+class ListingToBasicConverter:
     def toUint16(self, value):
         return bytes([(value // 256) & 0xFF, value & 0xFF])
 
+    def convertToAsciiBasic(self, f, bas):
+        endOfLine = bytes([0xD])
+        lines = f.readlines()
+        lineOfCodeLength = 0
+        bas.write(endOfLine)
+        for line in lines:
+            line = line.rstrip()
+            for car in line:
+                car = ord(car)
+                if car < 0x80:
+                    bas.write(bytes([car]))
+            bas.write(endOfLine)
+
+    def convertToTokenizedBasic(self, f, bas):
+        lines = f.readlines()
+        header = bytearray()
+        body = bytearray()
+        pointerNext = 0x25A4
+        zeroUint8 = bytes([0])
+        zeroUint16 = bytes([0, 0])
+
+        # convert source line by line
+        tokenizer = TokenizerContext(basicTokensDb, litteralTokensDb)
+        for line in lines:
+            tokenizer.reset()
+            isInLiteralString = False
+            # 1 -- extract the line number and the first space after
+            match = re.search("^([1-9][0-9]*).*$", line)
+            if match is None:
+                raise ValueError(f"No line number in this line : '{line}'")
+            else:
+                lineNumber = int(match.group(1))
+                line = line[len(match.group(1)) : -1]
+                if line[0] == " ":
+                    line = line[1:]
+
+            # 2 -- parse the line
+            for char in line:
+                charBytes = bytes(char, "utf-8")
+                if char == '"':
+                    tokenizer.commit()
+                    isInLiteralString = not isInLiteralString
+                    if isInLiteralString:
+                        tokenizer.appendAsLitteral(char)
+                    else:
+                        tokenizer.appendAsToken(char)
+                    tokenizer.commit()
+                    continue
+                if isInLiteralString:
+                    tokenizer.appendAsLitteral(char)
+                    continue
+                if char in [
+                    ".",
+                    ",",
+                    "(",
+                    ")",
+                    ":",
+                    " ",
+                ]:
+                    tokenizer.appendAsToken(char)
+                    tokenizer.commit()
+                    continue
+                # not in string litteral, convert to uppercase
+                char = char.upper()
+                charBytes = bytes(char, "utf-8")
+                tokenizer.appendAsToken(char)
+            tokenizer.commit()
+            lineBuffer = tokenizer.doneBuffer
+            lineBuffer += zeroUint8
+            pointerNext += len(lineBuffer) + 4
+            body += self.toUint16(pointerNext)
+            body += self.toUint16(lineNumber)
+            body += lineBuffer
+
+        # build header
+        body += zeroUint16
+        bodyLength = len(body)
+        header += bytes([0xFF])
+        header += self.toUint16(bodyLength)
+
+        # write to file
+        bas.write(header)
+        bas.write(body)
+
+
+class ListingToBasicCli:
+    def __init__(self):
+        # setup process dispatcher
+        self._processors = {
+            "LST": self.processIntoTokenizedBasicFile,
+            "LST,A": self.processIntoAsciiBasicFile,
+        }
+
+    def toUint16(self, value):
+        return bytes([(value // 256) & 0xFF, value & 0xFF])
+
+    def processIntoTokenizedBasicFile(self, source):
+        with open(source, "rt") as f:
+            with open(source[:-3] + "bas", "wb") as bas:
+                ListingToBasicConverter().convertToTokenizedBasic(f, bas)
+
+    def processIntoAsciiBasicFile(self, source):
+        source = source[:-2]  # because source is '<filename>,a'
+        with open(source, "rt") as f:
+            with open(source[:-3] + "bas", "wb") as bas:
+                ListingToBasicConverter().convertToAsciiBasic(f, bas)
+
     def run(self) -> int:
         self.args = args = createArgParser().parse_args()
-        endOfLine = bytes([0xD])
 
         for source in args.sources:
-            asciiMode = False
-            if source[-2:].upper() == ",A":
-                source = source[:-2]
-                asciiMode = True
-            if source[-3:].upper() != "LST":
+            dotPos = source.rfind(".")
+            if dotPos < 0:
+                raise ValueError(f"file.without.extension:{source}")
+
+            fileExtension = source[dotPos + 1 :].upper()
+            if fileExtension not in self._processors:
                 raise ValueError(
                     f"Extension 'lst' (case insensitive) not found for '{source}'."
                 )
-            with open(source, "rt") as f:
-                lines = f.readlines()
-            with open(source[:-3] + "bas", "wb") as bas:
-                if asciiMode:
-                    lineOfCodeLength = 0
-                    bas.write(endOfLine)
-                    for line in lines:
-                        line = line.rstrip()
-                        for car in line:
-                            car = ord(car)
-                            if car < 0x80:
-                                bas.write(bytes([car]))
-                        bas.write(endOfLine)
-                else:
-                    header = bytearray()
-                    body = bytearray()
-                    pointerNext = 0x25A4
-                    zeroUint8 = bytes([0])
-                    zeroUint16 = bytes([0, 0])
+            self._processors[fileExtension](source)
 
-                    # convert source line by line
-                    tokenizer = TokenizerContext(basicTokensDb, litteralTokensDb)
-                    for line in lines:
-                        tokenizer.reset()
-                        isInLiteralString = False
-                        # 1 -- extract the line number and the first space after
-                        match = re.search("^([1-9][0-9]*).*$", line)
-                        if match is None:
-                            raise ValueError(f"No line number in this line : '{line}'")
-                        else:
-                            lineNumber = int(match.group(1))
-                            line = line[len(match.group(1)) : -1]
-                            if line[0] == " ":
-                                line = line[1:]
-
-                        # 2 -- parse the line
-                        for char in line:
-                            charBytes = bytes(char, "utf-8")
-                            if char == '"':
-                                tokenizer.commit()
-                                isInLiteralString = not isInLiteralString
-                                if isInLiteralString:
-                                    tokenizer.appendAsLitteral(char)
-                                else:
-                                    tokenizer.appendAsToken(char)
-                                tokenizer.commit()
-                                continue
-                            if isInLiteralString:
-                                tokenizer.appendAsLitteral(char)
-                                continue
-                            if char in [
-                                ".",
-                                ",",
-                                "(",
-                                ")",
-                                ":",
-                                " ",
-                            ]:
-                                tokenizer.appendAsToken(char)
-                                tokenizer.commit()
-                                continue
-                            # not in string litteral, convert to uppercase
-                            char = char.upper()
-                            charBytes = bytes(char, "utf-8")
-                            tokenizer.appendAsToken(char)
-                        tokenizer.commit()
-                        lineBuffer = tokenizer.doneBuffer
-                        lineBuffer += zeroUint8
-                        pointerNext += len(lineBuffer) + 4
-                        body += self.toUint16(pointerNext)
-                        body += self.toUint16(lineNumber)
-                        body += lineBuffer
-
-                    # build header
-                    body += zeroUint16
-                    bodyLength = len(body)
-                    header += bytes([0xFF])
-                    header += self.toUint16(bodyLength)
-
-                    # write to file
-                    bas.write(header)
-                    bas.write(body)
         return 0
