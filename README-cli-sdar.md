@@ -51,18 +51,17 @@ Extract all the files contained inside a floppy disk archive readable by MO5 emu
 > draft ; to update with actual behavior
 
 * Files with the extension `bas` will be added as BASIC, tokenized files, unless they are suffixed with `,a` to be added as BASIC, ascii listing files.
-* Files with the extension `lst` will be added with the `bas` extension instead, as BASIC, ascii listing files.
-* Files with the extension `csv` will be added as DATA files
-* Other files will be added as BINARY files.
+* Files with the extension `bin` will be added as binany module files.
+* Files with the extension `txt` will be added as ascii text files.
+* Other files will be added as BINARY data files.
 
 ### Archive extraction
 
-* ASCII listing with the extension `bas` will be extracted with the `lst` extension.
-* Other files will be extracted as expected. If a file already exist, it is overwritten.
+* Files will be extracted as expected. **If a file already exist, it is overwritten without warning.**
 
 ### Archive listing
 
-* The type of files is inferred from the content of the leader block.
+* In verbose mode, the type of each files are listed, along its size in bytes and the number of blocks it occupies.
 
 ## File format of a disk archive
 

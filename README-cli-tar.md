@@ -45,14 +45,12 @@ Extract all the files contained inside a tape archive readable by MO5 emulators.
 ### Archive creation
 
 * Files with the extension `bas` will be added as BASIC, tokenized files, unless they are suffixed with `,a` to be added as BASIC, ascii listing files.
-* Files with the extension `lst` will be added with the `bas` extension instead, as BASIC, ascii listing files.
 * Files with the extension `csv` will be added as DATA files
 * Other files will be added as BINARY files.
 
 ### Archive extraction
 
-* ASCII listing with the extension `bas` will be extracted with the `lst` extension.
-* Other files will be extracted as expected. If a file already exist, it is overwritten.
+* Files will be extracted as they are. **If a file already exist, it is overwritten.**
 
 ### Archive listing
 
