@@ -49,8 +49,10 @@ FILE_B = "b.bas"
 FILE_C = "c.foo"
 FILE_D = "d.txt"
 FILE_E = "e.bin"
-FILE_F = "f.lst"
-FILE_G = "g.dat"
+
+FILE_LONG_NAME = "too_long_name.foo"
+FILE_LONG_EXTENSION = "too_long.extension"
+FILE_NOT_FOUND = "whatever.foo"
 
 COMMON_FILESET = [
     FILE_A,
@@ -58,27 +60,23 @@ COMMON_FILESET = [
     FILE_C,
     FILE_D,
     FILE_E,
-    FILE_F,
 ]
+
+REJECTED_FILESET = [FILE_LONG_NAME, FILE_LONG_EXTENSION]
+
 
 # File name of created archive
 FILE_IMAGE = "result.sd"
 
 
 def test_that_it_does_create_image_file():
+    sourceFileSet = COMMON_FILESET + REJECTED_FILESET
     tmp_dir = initializeTmpWorkspace(
-        [os.path.join(source_dir, f) for f in COMMON_FILESET]
+        [os.path.join(source_dir, f) for f in sourceFileSet]
     )
     createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
     baseArgs = ["prog", "--create", createdImageFile]
-    sourceArgs = [
-        FILE_A,
-        FILE_B,
-        FILE_C,
-        FILE_D,
-        FILE_E,
-        FILE_F,
-    ]
+    sourceArgs = sourceFileSet + [FILE_NOT_FOUND]
     with patch.object(
         sys, "argv", baseArgs + [os.path.join(tmp_dir, f) for f in sourceArgs]
     ):
@@ -87,15 +85,16 @@ def test_that_it_does_create_image_file():
         assert returnCode == 0
         assert (
             out.getvalue()
-            == """Side 0
+            == f"""Side 0
   A.BAS...ok
   B.BAS...ok
   C.FOO...ok
   D.TXT...ok
   E.BIN...ok
-  -- f.lst --> f.bas,a
-  F.BAS...ok
-6 files
+  -- too long name : {tmp_dir}/too_long_name.foo
+  -- too long extension : {tmp_dir}/too_long.extension
+  -- not found : {tmp_dir}/whatever.foo
+5 files
 ---
 Side 1
 0 files
@@ -107,7 +106,7 @@ Side 3
 0 files
 ---
 TOTAL
-6 files
+5 files
 """
         )
 
@@ -115,16 +114,16 @@ TOTAL
         assert os.path.exists(createdImageFile)
         # -- load the binary file as DiskImage
         with open(createdImageFile, mode="rb") as infile:
-            actualImageData = infile.readall()
+            actualImageData = infile.read()
         actualImage = DiskImage(
             actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
         )
         # -- verify side 0
         fs = FileSystemController(actualImage.sides[0])
         usage = fs.computeUsage()
-        assert usage.used == 6
+        assert usage.used == 5
         assert usage.reserved == 3
-        assert usage.free == 151
+        assert usage.free == 152
         # -- -- TODO verify each file in catalog, then extract and assert data size and content
         # -- verify side 1
         fs = FileSystemController(actualImage.sides[1])

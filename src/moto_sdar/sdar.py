@@ -261,7 +261,6 @@ class DiskArchiveCreator(DiskArchiveWorker):
             "BAS": self.processFileAsTokenizedBasic,
             "BAS,A": self.processFileAsAsciiBasic,
             "BIN": self.processFileAsBinaryModule,
-            "LST": self.processFileAsListingAsciiBasic,
             "TXT": self.processFileAsTxt,
         }
 
@@ -322,7 +321,17 @@ class DiskArchiveCreator(DiskArchiveWorker):
 
             # ...or process a file
             if not os.path.exists(src):
-                listener.onBeforeBeginOfFile(f"not.found:{src}")
+                listener.onBeforeBeginOfFile(f"-- not found : {src}")
+                continue
+
+            if dotPos > -1:
+                fileName = os.path.basename(src[0:dotPos].upper())
+                fileExtension = src[dotPos + 1 :].upper()
+            if len(fileName) > 8:
+                listener.onBeforeBeginOfFile(f"-- too long name : {src}")
+                continue
+            if len(fileExtension) > 3:
+                listener.onBeforeBeginOfFile(f"-- too long extension : {src}")
                 continue
 
             with open(src, "rb") as sourceFile:
@@ -417,23 +426,6 @@ class DiskArchiveCreator(DiskArchiveWorker):
         fileExtension: str,
         fileData: bytes,
     ) -> int:
-        self.writeFile(
-            listener,
-            fileName,
-            "BAS",
-            TypeOfDiskFile.BASIC_PROGRAM,
-            TypeOfData.ASCII_DATA,
-            fileData,
-        )
-
-    def processFileAsListingAsciiBasic(
-        self,
-        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
-        fileName: str,
-        fileExtension: str,
-        fileData: bytes,
-    ) -> int:
-        processedData = fileData  # TODO convert on the fly into ASCII BASIC (lst2bas)
         self.writeFile(
             listener,
             fileName,
