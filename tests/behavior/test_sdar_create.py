@@ -77,6 +77,7 @@ def test_that_it_does_create_image_file():
     createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
     baseArgs = ["prog", "--create", createdImageFile]
     sourceArgs = sourceFileSet + [FILE_NOT_FOUND]
+    sourceArgs[1] = sourceArgs[1] + ",a"
     with patch.object(
         sys, "argv", baseArgs + [os.path.join(tmp_dir, f) for f in sourceArgs]
     ):
@@ -124,22 +125,84 @@ TOTAL
         assert usage.used == 5
         assert usage.reserved == 3
         assert usage.free == 152
-        # -- -- TODO verify each file in catalog, then extract and assert data size and content
+        # -- -- get catalog and verify
+        catalog = fs.listFiles()
+        assert len(catalog) == 5
+        assert [f.toDict() for f in catalog] == [
+            {
+                "extension": "BAS",
+                "name": "A       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "TOKEN",
+                "typeOfFile": "BASIC",
+            },
+            {
+                "extension": "BAS",
+                "name": "B       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "ASCII",
+                "typeOfFile": "BASIC",
+            },
+            {
+                "extension": "FOO",
+                "name": "C       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "BINARY",
+                "typeOfFile": "DATA",
+            },
+            {
+                "extension": "TXT",
+                "name": "D       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "ASCII",
+                "typeOfFile": "TEXT",
+            },
+            {
+                "extension": "BIN",
+                "name": "E       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "BINARY",
+                "typeOfFile": "MODULE",
+            },
+        ]
+        assert [fs.readFile(f) for f in catalog] == [
+            d
+            for d in [
+                "aaaaaaaaaa\n".encode(encoding="ascii"),
+                "bbbbbbbbbb\n".encode(encoding="ascii"),
+                "cccccccccc\n".encode(encoding="ascii"),
+                "dddddddddd\n".encode(encoding="ascii"),
+                "eeeeeeeeee\n".encode(encoding="ascii"),
+            ]
+        ]
         # -- verify side 1
         fs = FileSystemController(actualImage.sides[1])
         usage = fs.computeUsage()
         assert usage.used == 0
         assert usage.reserved == 3
         assert usage.free == 157
+        assert len(fs.listFiles()) == 0
         # -- verify side 2
         fs = FileSystemController(actualImage.sides[2])
         usage = fs.computeUsage()
         assert usage.used == 0
         assert usage.reserved == 3
         assert usage.free == 157
+        assert len(fs.listFiles()) == 0
         # -- verify side 3
         fs = FileSystemController(actualImage.sides[3])
         usage = fs.computeUsage()
         assert usage.used == 0
         assert usage.reserved == 3
         assert usage.free == 157
+        assert len(fs.listFiles()) == 0

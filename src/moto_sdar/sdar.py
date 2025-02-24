@@ -320,34 +320,33 @@ class DiskArchiveCreator(DiskArchiveWorker):
                 continue
 
             # ...or process a file
-            if not os.path.exists(src):
+            cleanSrc = src[:-2] if src[-2:].upper() == ",A" else src
+            if not os.path.exists(cleanSrc):
                 listener.onBeforeBeginOfFile(f"-- not found : {src}")
                 continue
 
             if dotPos > -1:
                 fileName = os.path.basename(src[0:dotPos].upper())
-                fileExtension = src[dotPos + 1 :].upper()
+                fileExtension = cleanSrc[dotPos + 1 :].upper()
+                fileExtensionWithOption = src[dotPos + 1 :].upper()
+            else:
+                fileExtension = fileExtensionWithOption = None
             if len(fileName) > 8:
-                listener.onBeforeBeginOfFile(f"-- too long name : {src}")
+                listener.onBeforeBeginOfFile(f"-- too long name : {cleanSrc}")
                 continue
             if len(fileExtension) > 3:
-                listener.onBeforeBeginOfFile(f"-- too long extension : {src}")
+                listener.onBeforeBeginOfFile(f"-- too long extension : {cleanSrc}")
                 continue
 
-            with open(src, "rb") as sourceFile:
+            with open(cleanSrc, "rb") as sourceFile:
                 fileData = sourceFile.read()
 
             # dispatch to a processor
-            process = self._defaultProcessors
-            if dotPos > -1:
-                fileName = os.path.basename(src[0:dotPos].upper())
-                fileExtension = src[dotPos + 1 :].upper()
-            if len(fileName) > 8:
-                fileName = fileName[0:8]
-
-            if fileExtension in self._processors:
-                process = self._processors[fileExtension]
-
+            process = (
+                self._processors[fileExtensionWithOption]
+                if fileExtensionWithOption in self._processors
+                else self._defaultProcessors
+            )
             process(listener, fileName, fileExtension, fileData)
 
             if not self._hasController():  # cannot write anymore
