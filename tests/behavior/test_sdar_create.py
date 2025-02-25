@@ -206,3 +206,162 @@ TOTAL
         assert usage.reserved == 3
         assert usage.free == 157
         assert len(fs.listFiles()) == 0
+
+
+def test_that_it_goes_to_the_next_disk_side_with_eos_switch():
+    sourceFileSet = COMMON_FILESET
+    tmp_dir = initializeTmpWorkspace(
+        [os.path.join(source_dir, f) for f in sourceFileSet]
+    )
+    createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
+    baseArgs = ["prog", "--create", createdImageFile]
+    sourceArgs = [os.path.join(tmp_dir, f) for f in sourceFileSet]
+    sourceArgs[1] = sourceArgs[1] + ",a"
+    sourceArgs = (
+        sourceArgs[0:2]
+        + ["--eos"]
+        + sourceArgs[2:3]
+        + ["--eos", "--eos"]
+        + sourceArgs[3:]
+    )
+    with patch.object(sys, "argv", baseArgs + ["--"] + sourceArgs):
+        with redirect_stdout(io.StringIO()) as out:
+            returnCode = DiskArchiveCli().run()
+        assert returnCode == 0
+        assert (
+            out.getvalue()
+            == f"""Side 0
+  A.BAS...ok
+  B.BAS...ok
+2 files
+---
+Side 1
+  C.FOO...ok
+1 file
+---
+Side 2
+0 files
+---
+Side 3
+  D.TXT...ok
+  E.BIN...ok
+2 files
+---
+TOTAL
+5 files
+"""
+        )
+
+        # Verify archive file
+        assert os.path.exists(createdImageFile)
+        # -- load the binary file as DiskImage
+        with open(createdImageFile, mode="rb") as infile:
+            actualImageData = infile.read()
+        actualImage = DiskImage(
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+        )
+        # -- verify side 0
+        fs = FileSystemController(actualImage.sides[0])
+        usage = fs.computeUsage()
+        assert usage.used == 2
+        assert usage.reserved == 3
+        assert usage.free == 155
+        # -- -- get catalog and verify
+        catalog = fs.listFiles()
+        assert len(catalog) == 2
+        assert [f.toDict() for f in catalog] == [
+            {
+                "extension": "BAS",
+                "name": "A       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "TOKEN",
+                "typeOfFile": "BASIC",
+            },
+            {
+                "extension": "BAS",
+                "name": "B       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "ASCII",
+                "typeOfFile": "BASIC",
+            },
+        ]
+        assert [fs.readFile(f) for f in catalog] == [
+            d
+            for d in [
+                "aaaaaaaaaa\n".encode(encoding="ascii"),
+                "bbbbbbbbbb\n".encode(encoding="ascii"),
+            ]
+        ]
+        # -- verify side 1
+        fs = FileSystemController(actualImage.sides[1])
+        usage = fs.computeUsage()
+        assert usage.used == 1
+        assert usage.reserved == 3
+        assert usage.free == 156
+        # -- -- get catalog and verify
+        catalog = fs.listFiles()
+        assert len(catalog) == 1
+        assert [f.toDict() for f in catalog] == [
+            {
+                "extension": "FOO",
+                "name": "C       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "BINARY",
+                "typeOfFile": "DATA",
+            },
+        ]
+        assert [fs.readFile(f) for f in catalog] == [
+            d
+            for d in [
+                "cccccccccc\n".encode(encoding="ascii"),
+            ]
+        ]
+        # -- verify side 2
+        fs = FileSystemController(actualImage.sides[2])
+        usage = fs.computeUsage()
+        assert usage.used == 0
+        assert usage.reserved == 3
+        assert usage.free == 157
+        assert len(fs.listFiles()) == 0
+        # -- verify side 3
+        fs = FileSystemController(actualImage.sides[3])
+        usage = fs.computeUsage()
+        assert usage.used == 2
+        assert usage.reserved == 3
+        assert usage.free == 155
+        # -- -- get catalog and verify
+        catalog = fs.listFiles()
+        assert len(catalog) == 2
+        assert [f.toDict() for f in catalog] == [
+            {
+                "extension": "TXT",
+                "name": "D       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "ASCII",
+                "typeOfFile": "TEXT",
+            },
+            {
+                "extension": "BIN",
+                "name": "E       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "BINARY",
+                "typeOfFile": "MODULE",
+            },
+        ]
+        assert [fs.readFile(f) for f in catalog] == [
+            d
+            for d in [
+                "dddddddddd\n".encode(encoding="ascii"),
+                "eeeeeeeeee\n".encode(encoding="ascii"),
+            ]
+        ]

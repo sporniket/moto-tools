@@ -314,9 +314,11 @@ class DiskArchiveCreator(DiskArchiveWorker):
 
             # Either manage user decided change of side...
             if fileName == "--EOS":
+                listener.onEndOfSide(self._controller.computeUsage())
                 self._nextController()
                 if not self._hasController():
                     break
+                listener.onBeginOfSide(self._currentSide)
                 continue
 
             # ...or process a file
