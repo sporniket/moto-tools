@@ -492,6 +492,7 @@ class DiskArchiveCreator(DiskArchiveWorker):
                 break  # done, no need to retry
             except ValueError:
                 # not enough place, try next side
+                listener.onAbortFile("too big")
                 listener.onEndOfSide(self._controller.computeUsage())
                 self._nextController()
                 if not self._hasController():  # cannot try anymore

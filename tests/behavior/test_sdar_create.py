@@ -49,6 +49,7 @@ FILE_B = "b.bas"
 FILE_C = "c.foo"
 FILE_D = "d.txt"
 FILE_E = "e.bin"
+FILE_G = "g.dat"
 
 FILE_LONG_NAME = "too_long_name.foo"
 FILE_LONG_EXTENSION = "too_long.extension"
@@ -67,6 +68,30 @@ REJECTED_FILESET = [FILE_LONG_NAME, FILE_LONG_EXTENSION]
 
 # File name of created archive
 FILE_IMAGE = "result.sd"
+
+
+def prepareBigFileContent(size: int) -> bytes:
+    result = bytearray(size)
+    oneBlock = bytearray(i for j in list(range(8)) for i in list(range(255)))
+    blockSize = len(oneBlock)
+
+    # self verify
+    assert blockSize == 255 * 8
+    oneChunk = bytes([i for i in range(255)])
+    for j in range(8):
+        assert oneBlock[j * 255] == 0 and oneBlock[j * 255 : (j + 1) * 255] == oneChunk
+
+    # proceeds
+    fullBlocks, remainder = size // blockSize, size % blockSize
+    start = 0
+    for i in range(fullBlocks):
+        oneBlock[0] = i & 0xFF
+        result[start : start + blockSize] = oneBlock
+        start = start + blockSize
+    if remainder > 0:
+        oneBlock[0] = fullBlocks & 0xFF
+        result[start:] = oneBlock[:remainder]
+    return bytes(result)
 
 
 def test_that_it_does_create_image_file():
@@ -365,3 +390,162 @@ TOTAL
                 "eeeeeeeeee\n".encode(encoding="ascii"),
             ]
         ]
+
+
+def test_that_it_goes_to_the_next_disk_side_when_the_file_is_too_big_for_the_current_side():
+    # prepare
+    sourceFileSet = COMMON_FILESET
+    tmp_dir = initializeTmpWorkspace(
+        [os.path.join(source_dir, f) for f in sourceFileSet]
+    )
+
+    bigFileName = os.path.join(tmp_dir, FILE_G)
+    bigFileContent = prepareBigFileContent(312000)  # needs 153 blocks
+    with open(bigFileName, "wb") as f:
+        f.write(bigFileContent)
+
+    # execute
+    createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
+    baseArgs = ["prog", "--create", createdImageFile]
+    sourceArgs = [os.path.join(tmp_dir, f) for f in sourceFileSet]
+    sourceArgs[1] = sourceArgs[1] + ",a"
+    sourceArgs.append(bigFileName)
+    with patch.object(sys, "argv", baseArgs + sourceArgs):
+        with redirect_stdout(io.StringIO()) as out:
+            returnCode = DiskArchiveCli().run()
+        assert returnCode == 0
+        assert (
+            out.getvalue()
+            == f"""Side 0
+  A.BAS...ok
+  B.BAS...ok
+  C.FOO...ok
+  D.TXT...ok
+  E.BIN...ok
+  G.DAT...too big
+5 files
+---
+Side 1
+  G.DAT...ok
+1 file
+---
+Side 2
+0 files
+---
+Side 3
+0 files
+---
+TOTAL
+6 files
+"""
+        )
+
+        # Verify archive file
+        assert os.path.exists(createdImageFile)
+        # -- load the binary file as DiskImage
+        with open(createdImageFile, mode="rb") as infile:
+            actualImageData = infile.read()
+        actualImage = DiskImage(
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+        )
+        # -- verify side 0
+        fs = FileSystemController(actualImage.sides[0])
+        usage = fs.computeUsage()
+        assert usage.used == 5
+        assert usage.reserved == 3
+        assert usage.free == 152
+        # -- -- get catalog and verify
+        catalog = fs.listFiles()
+        assert len(catalog) == 5
+        assert [f.toDict() for f in catalog] == [
+            {
+                "extension": "BAS",
+                "name": "A       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "TOKEN",
+                "typeOfFile": "BASIC",
+            },
+            {
+                "extension": "BAS",
+                "name": "B       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "ASCII",
+                "typeOfFile": "BASIC",
+            },
+            {
+                "extension": "FOO",
+                "name": "C       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "BINARY",
+                "typeOfFile": "DATA",
+            },
+            {
+                "extension": "TXT",
+                "name": "D       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "ASCII",
+                "typeOfFile": "TEXT",
+            },
+            {
+                "extension": "BIN",
+                "name": "E       ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "BINARY",
+                "typeOfFile": "MODULE",
+            },
+        ]
+        assert [fs.readFile(f) for f in catalog] == [
+            d
+            for d in [
+                "aaaaaaaaaa\n".encode(encoding="ascii"),
+                "bbbbbbbbbb\n".encode(encoding="ascii"),
+                "cccccccccc\n".encode(encoding="ascii"),
+                "dddddddddd\n".encode(encoding="ascii"),
+                "eeeeeeeeee\n".encode(encoding="ascii"),
+            ]
+        ]
+        # -- verify side 1
+        fs = FileSystemController(actualImage.sides[1])
+        usage = fs.computeUsage()
+        assert usage.used == 153
+        assert usage.reserved == 3
+        assert usage.free == 4
+        catalog = fs.listFiles()
+        assert len(catalog) == 1
+        assert [f.toDict() for f in catalog] == [
+            {
+                "extension": "DAT",
+                "name": "G       ",
+                "sizeInBlocks": 153,
+                "sizeInBytes": 312000,
+                "status": "ALIVE",
+                "typeOfData": "BINARY",
+                "typeOfFile": "DATA",
+            },
+        ]
+        actualContent = fs.readFile(catalog[0])
+        assert actualContent == bigFileContent
+        # -- verify side 2
+        fs = FileSystemController(actualImage.sides[2])
+        usage = fs.computeUsage()
+        assert usage.used == 0
+        assert usage.reserved == 3
+        assert usage.free == 157
+        assert len(fs.listFiles()) == 0
+        # -- verify side 3
+        fs = FileSystemController(actualImage.sides[3])
+        usage = fs.computeUsage()
+        assert usage.used == 0
+        assert usage.reserved == 3
+        assert usage.free == 157
+        assert len(fs.listFiles()) == 0

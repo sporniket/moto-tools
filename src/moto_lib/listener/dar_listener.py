@@ -202,13 +202,20 @@ class DiskImageCliListenerQuiet:
         else:
             self._printReturnLineIfNeeded()
 
-    def onBeforeBeginOfFile(self, message: str):  # fully defined message
+    def onBeforeBeginOfFile(self, fullyDefinedMessage: str):
         """Notify of a pre-processing happening before starting to work on a file"""
-        print(f"  {message}")
+        print(f"  {fullyDefinedMessage}")
+        self._needReturnLine = False
 
-    def onAfterEndOfFile(self, message: str):  # fully defined message
+    def onAfterEndOfFile(self, fullyDefinedMessage: str):
         """Notify of a post-processing happening after having finished to work on a file"""
-        print(f"  {message}")
+        print(f"  {fullyDefinedMessage}")
+        self._needReturnLine = False
+
+    def onAbortFile(self, fullyDefinedMessage: str):
+        """A file has been started, but the process is interrupted for the given reason"""
+        print(fullyDefinedMessage)
+        self._needReturnLine = False
 
 
 class DiskImageCliListenerVerbose:
@@ -333,10 +340,15 @@ class DiskImageCliListenerVerbose:
                 print("ignored")
                 self._needReturnLine = False
 
-    def onBeforeBeginOfFile(self, message: str):  # fully defined message
+    def onBeforeBeginOfFile(self, fullyDefinedMessage: str):
         """Notify of a pre-processing happening before starting to work on a file"""
-        print(f"  {message}")
+        print(f"  {fullyDefinedMessage}")
 
-    def onAfterEndOfFile(self, message: str):  # fully defined message
+    def onAfterEndOfFile(self, fullyDefinedMessage: str):
         """Notify of a post-processing happening after having finished to work on a file"""
-        print(f"  {message}")
+        print(f"  {fullyDefinedMessage}")
+
+    def onAbortFile(self, fullyDefinedMessage: str):
+        """A file has been started, but the process is interrupted for the given reason"""
+        print(fullyDefinedMessage)
+        self._needReturnLine = False
