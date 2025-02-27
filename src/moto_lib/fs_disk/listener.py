@@ -15,7 +15,7 @@ or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with MO/TO tools.
-If not, see <https://www.gnu.org/licenses/>. 
+If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
@@ -35,7 +35,7 @@ VERB_READ = "read"
 VERB_WRITTEN = "written"
 
 
-class TypeOfProcessing(Enum):
+class TypeOfDiskImageProcessing(Enum):
     LISTING = 0
     EXTRACTING = 1  # for extracting files from an image
     UPDATING = 2  # for putting files into an image
@@ -107,7 +107,10 @@ class DiskImageCliListenerCounters:
 
 
 class DiskImageCliListenerQuiet:
-    def __init__(self, typeOfProcessing: TypeOfProcessing = TypeOfProcessing.LISTING):
+    def __init__(
+        self,
+        typeOfProcessing: TypeOfDiskImageProcessing = TypeOfDiskImageProcessing.LISTING,
+    ):
         self._processing = typeOfProcessing
         self._needReturnLine = False
         self._counter = DiskImageCliListenerCounters()
@@ -122,7 +125,7 @@ class DiskImageCliListenerQuiet:
 
         self._printReturnLineIfNeeded()
         if (
-            self._processing != TypeOfProcessing.LISTING
+            self._processing != TypeOfDiskImageProcessing.LISTING
             and self._counter.countOfSides > 0
         ):
             print("---")
@@ -136,7 +139,7 @@ class DiskImageCliListenerQuiet:
 
         self._printReturnLineIfNeeded()
         if (
-            self._processing != TypeOfProcessing.LISTING
+            self._processing != TypeOfDiskImageProcessing.LISTING
             and self._counter.countOfSides > 1
         ):
             print("---")
@@ -146,7 +149,7 @@ class DiskImageCliListenerQuiet:
         self._counter.onEndOfSide(usage)
 
         self._printReturnLineIfNeeded()
-        if self._processing != TypeOfProcessing.LISTING:
+        if self._processing != TypeOfDiskImageProcessing.LISTING:
             print(
                 f"{self._counter.countOfFilesOfCurrentSide} file{FINAL_S if self._counter.countOfFilesOfCurrentSide != 1 else FINAL_NONE}"
             )
@@ -154,6 +157,18 @@ class DiskImageCliListenerQuiet:
     def onBeginOfFile(
         self, data: dict[str, any]  # as provided by CatalogEntry.toDict()
     ):
+        """Process 'begin of file' events.
+
+        The event MUST contains following properties :
+        * `status` : CatalogEntryStatus.name of the file
+        * `name` : the file name (8 chars at most)
+        * `extension` : the file extension (3 chars at most)
+        * `typeOfFile` : TypeOfFile.toStringForCatalog()
+        * `typeOfData` : TypeOfData.toStringForCatalog()
+
+        Args:
+            data (dict[str, any]): The event description
+        """
         self._counter.onBeginOfFile(data)
 
         self._printReturnLineIfNeeded()
@@ -164,33 +179,53 @@ class DiskImageCliListenerQuiet:
             print(f"  {name.rstrip()}.{extension.rstrip()}", end="")
             if data["status"] == CatalogEntryStatus.DELETED.name:
                 print(" (deleted)", end="")
-        if self._processing != TypeOfProcessing.LISTING:
+        if self._processing != TypeOfDiskImageProcessing.LISTING:
             print("...", end="")
 
         self._needReturnLine = True
 
     def onEndOfFile(self, data: dict[str, any]):  # as provided by CatalogEntry.toDict()
+        """Process 'end of file' events.
+
+        The event MUST contains following properties :
+        * `status` : CatalogEntryStatus.name of the file
+        * `sizeInBytes` : size in bytes
+        * `sizeInBlocks` : size in blocks
+
+        Args:
+            data (dict[str, any]): The event description
+        """
         self._counter.onEndOfFile(data)
 
         fileIsAlive = data["status"] == CatalogEntryStatus.ALIVE.name
 
-        if self._processing != TypeOfProcessing.LISTING:
+        if self._processing != TypeOfDiskImageProcessing.LISTING:
             print("ok" if fileIsAlive else "ignored")
             self._needReturnLine = False
         else:
             self._printReturnLineIfNeeded()
 
-    def onBeforeBeginOfFile(self, message: str):  # fully defined message
+    def onBeforeBeginOfFile(self, fullyDefinedMessage: str):
         """Notify of a pre-processing happening before starting to work on a file"""
-        print(f"  {message}")
+        print(f"  {fullyDefinedMessage}")
+        self._needReturnLine = False
 
-    def onAfterEndOfFile(self, message: str):  # fully defined message
+    def onAfterEndOfFile(self, fullyDefinedMessage: str):
         """Notify of a post-processing happening after having finished to work on a file"""
-        print(f"  {message}")
+        print(f"  {fullyDefinedMessage}")
+        self._needReturnLine = False
+
+    def onAbortFile(self, fullyDefinedMessage: str):
+        """A file has been started, but the process is interrupted for the given reason"""
+        print(fullyDefinedMessage)
+        self._needReturnLine = False
 
 
 class DiskImageCliListenerVerbose:
-    def __init__(self, typeOfProcessing: TypeOfProcessing = TypeOfProcessing.LISTING):
+    def __init__(
+        self,
+        typeOfProcessing: TypeOfDiskImageProcessing = TypeOfDiskImageProcessing.LISTING,
+    ):
         self._processing = typeOfProcessing
         self._needReturnLine = False
         self._counter = DiskImageCliListenerCounters()
@@ -205,13 +240,13 @@ class DiskImageCliListenerVerbose:
 
         self._printReturnLineIfNeeded()
         if (
-            self._processing != TypeOfProcessing.LISTING
+            self._processing != TypeOfDiskImageProcessing.LISTING
             and self._counter.countOfSides > 0
         ):
             print("---")
             print("TOTAL")
             print(
-                f"{self._counter.countOfFilesOfDiskImage} file{FINAL_S if self._counter.countOfFilesOfDiskImage != 1 else FINAL_NONE}, {self._counter.countOfBlocksOfDiskImage} block{FINAL_S if self._counter.countOfBlocksOfDiskImage != 1 else FINAL_NONE} {VERB_READ if self._processing == TypeOfProcessing.EXTRACTING else VERB_WRITTEN}"
+                f"{self._counter.countOfFilesOfDiskImage} file{FINAL_S if self._counter.countOfFilesOfDiskImage != 1 else FINAL_NONE}, {self._counter.countOfBlocksOfDiskImage} block{FINAL_S if self._counter.countOfBlocksOfDiskImage != 1 else FINAL_NONE} {VERB_READ if self._processing == TypeOfDiskImageProcessing.EXTRACTING else VERB_WRITTEN}"
             )
 
     def onBeginOfSide(self, sidenumber: int):
@@ -236,15 +271,15 @@ class DiskImageCliListenerVerbose:
         )
         totalUse = usage.reserved + usage.used
         totalBlock = totalUse + usage.free
-        if self._processing == TypeOfProcessing.LISTING:
+        if self._processing == TypeOfDiskImageProcessing.LISTING:
             print(
                 f", ({usage.reserved} + {usage.used}) block{FINAL_S if (totalBlock) != 1 else FINAL_NONE} used ({(totalUse/totalBlock):.1%})"
             )
-        elif self._processing == TypeOfProcessing.EXTRACTING:
+        elif self._processing == TypeOfDiskImageProcessing.EXTRACTING:
             print(
                 f", {self._counter.countOfBlocksOfCurrentSide} block{FINAL_S if (self._counter.countOfBlocksOfCurrentSide) != 1 else FINAL_NONE} read ({(self._counter.countOfBlocksOfCurrentSide/totalBlock):.1%})"
             )
-        elif self._processing == TypeOfProcessing.UPDATING:
+        elif self._processing == TypeOfDiskImageProcessing.UPDATING:
             print(
                 f", {self._counter.countOfBlocksOfCurrentSide} block{FINAL_S if (self._counter.countOfBlocksOfCurrentSide) != 1 else FINAL_NONE} written ({(self._counter.countOfBlocksOfCurrentSide/totalBlock):.1%})"
             )
@@ -254,8 +289,20 @@ class DiskImageCliListenerVerbose:
     def onBeginOfFile(
         self, data: dict[str, any]  # as provided by CatalogEntry.toDict()
     ):
+        """Process 'begin of file' events.
+
+        The event MUST contains following properties :
+        * `status` : CatalogEntryStatus.name of the file
+        * `name` : the file name (8 chars at most)
+        * `extension` : the file extension (3 chars at most)
+        * `typeOfFile` : TypeOfFile.toStringForCatalog()
+        * `typeOfData` : TypeOfData.toStringForCatalog()
+
+        Args:
+            data (dict[str, any]): The event description
+        """
         self._counter.onBeginOfFile(data)
-        isListing = self._processing == TypeOfProcessing.LISTING
+        isListing = self._processing == TypeOfDiskImageProcessing.LISTING
 
         self._printReturnLineIfNeeded()
         if data["status"] == CatalogEntryStatus.NEVER_USED.name:
@@ -268,12 +315,22 @@ class DiskImageCliListenerVerbose:
             else:
                 typeOfFile, typeOfData = data["typeOfFile"], data["typeOfData"]
                 print(f"  {typeOfFile:8}{typeOfData:8}", end="")
-        if self._processing != TypeOfProcessing.LISTING:
+        if self._processing != TypeOfDiskImageProcessing.LISTING:
             print("......", end="")
 
         self._needReturnLine = True
 
     def onEndOfFile(self, data: dict[str, any]):  # as provided by CatalogEntry.toDict()
+        """Process 'end of file' events.
+
+        The event MUST contains following properties :
+        * `status` : CatalogEntryStatus.name of the file
+        * `sizeInBytes` : size in bytes
+        * `sizeInBlocks` : size in blocks
+
+        Args:
+            data (dict[str, any]): The event description
+        """
         self._counter.onEndOfFile(data)
 
         fileIsAlive = data["status"] == CatalogEntryStatus.ALIVE.name
@@ -285,14 +342,19 @@ class DiskImageCliListenerVerbose:
             )
             self._needReturnLine = False
         else:
-            if self._processing != TypeOfProcessing.LISTING:
+            if self._processing != TypeOfDiskImageProcessing.LISTING:
                 print("ignored")
                 self._needReturnLine = False
 
-    def onBeforeBeginOfFile(self, message: str):  # fully defined message
+    def onBeforeBeginOfFile(self, fullyDefinedMessage: str):
         """Notify of a pre-processing happening before starting to work on a file"""
-        print(f"  {message}")
+        print(f"  {fullyDefinedMessage}")
 
-    def onAfterEndOfFile(self, message: str):  # fully defined message
+    def onAfterEndOfFile(self, fullyDefinedMessage: str):
         """Notify of a post-processing happening after having finished to work on a file"""
-        print(f"  {message}")
+        print(f"  {fullyDefinedMessage}")
+
+    def onAbortFile(self, fullyDefinedMessage: str):
+        """A file has been started, but the process is interrupted for the given reason"""
+        print(fullyDefinedMessage)
+        self._needReturnLine = False

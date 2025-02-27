@@ -15,7 +15,7 @@ or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with MO/TO tools.
-If not, see <https://www.gnu.org/licenses/>. 
+If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
@@ -192,9 +192,6 @@ If not, see <https://www.gnu.org/licenses/>. 
                         src = src[:-2]
                     elif fileExtension == "BAS":
                         fileType = 0  # basic
-                    elif fileType == "LST":
-                        # TODO converts on the fly into ASCII BAS ?
-                        pass
                     elif fileExtension == "CSV":
                         # TODO check the actual format (separator 0xD ? )
                         fileType = 1  # TODO check that file created by basic file commands have type 1 / data

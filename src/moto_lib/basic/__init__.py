@@ -19,13 +19,12 @@ If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
-import sys
-from .bas2lst import BasicToListingCli
+from .converter_from_listing import (
+    ListingToAsciiBasicConverter,
+    ListingToTokenizedBasicConverter,
+)
 
-
-def main():
-    sys.exit(BasicToListingCli().run())
-
-
-if __name__ == "__main__":
-    main()
+__all__ = [
+    "ListingToAsciiBasicConverter",
+    "ListingToTokenizedBasicConverter",
+]

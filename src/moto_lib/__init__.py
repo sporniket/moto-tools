@@ -16,12 +16,12 @@ or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with MO/TO tools.
-If not, see <https://www.gnu.org/licenses/>. 
+If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
 from .fs_tape import *
-from .tokenizer import *
+from .basic.tokenizer import *
 
 __all__ = [
     "TypeOfTapeBlock",

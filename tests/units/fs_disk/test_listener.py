@@ -15,17 +15,17 @@ or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with MO/TO tools.
-If not, see <https://www.gnu.org/licenses/>. 
+If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
 import io
 from contextlib import redirect_stdout
 
-from moto_lib.listener.dar_listener import (
+from moto_lib.fs_disk.listener import (
     DiskImageCliListenerQuiet,
     DiskImageCliListenerVerbose,
-    TypeOfProcessing,
+    TypeOfDiskImageProcessing,
 )
 from moto_lib.fs_disk.controller import FileSystemUsage
 
@@ -86,7 +86,7 @@ usage10 = FileSystemUsage(42, 10, 108)
 
 
 def test_DiskImageCliListenerQuiet_should_output_expected_messages_for_listing():
-    l = DiskImageCliListenerQuiet(TypeOfProcessing.LISTING)
+    l = DiskImageCliListenerQuiet(TypeOfDiskImageProcessing.LISTING)
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
@@ -129,7 +129,7 @@ after done
 
 
 def test_DiskImageCliListenerQuiet_should_output_expected_messages_for_extracting():
-    l = DiskImageCliListenerQuiet(TypeOfProcessing.EXTRACTING)
+    l = DiskImageCliListenerQuiet(TypeOfDiskImageProcessing.EXTRACTING)
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
@@ -177,7 +177,7 @@ after done
 
 
 def test_DiskImageCliListenerQuiet_should_output_expected_messages_for_updating():
-    l = DiskImageCliListenerQuiet(TypeOfProcessing.UPDATING)
+    l = DiskImageCliListenerQuiet(TypeOfDiskImageProcessing.UPDATING)
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
@@ -225,7 +225,7 @@ after done
 
 
 def test_DiskImageCliListenerVerbose_should_output_expected_messages_for_listing():
-    l = DiskImageCliListenerVerbose(TypeOfProcessing.LISTING)
+    l = DiskImageCliListenerVerbose(TypeOfDiskImageProcessing.LISTING)
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
@@ -285,7 +285,7 @@ after done
 
 
 def test_DiskImageCliListenerVerbose_should_output_expected_messages_for_extracting():
-    l = DiskImageCliListenerVerbose(TypeOfProcessing.EXTRACTING)
+    l = DiskImageCliListenerVerbose(TypeOfDiskImageProcessing.EXTRACTING)
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")
@@ -348,7 +348,7 @@ after done
 
 
 def test_DiskImageCliListenerVerbose_should_output_expected_messages_for_updating():
-    l = DiskImageCliListenerVerbose(TypeOfProcessing.UPDATING)
+    l = DiskImageCliListenerVerbose(TypeOfDiskImageProcessing.UPDATING)
     with redirect_stdout(io.StringIO()) as out:
         l.onBeginOfSide(0)
         print("after begin of side", end="")

@@ -1,4 +1,5 @@
 """
+File system on disk.
 ---
 (c) 2022 David SPORN
 ---
@@ -19,13 +20,25 @@ If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
-import sys
-from .bas2lst import BasicToListingCli
+import os
+
+from ..image import TypeOfDiskImage
+from ..image_manager import SingleDiskImageManager
+from ..listener import DiskImageCliListenerQuiet, DiskImageCliListenerVerbose
 
 
-def main():
-    sys.exit(BasicToListingCli().run())
+class DiskImageWorker:
+    """Base class to an implementation working on a disk image."""
 
+    def __init__(self, typeOfDiskImage: TypeOfDiskImage):
+        if typeOfDiskImage is None:
+            raise ValueError("error.undefined.type.of.disk.image")
+        self._typeOfDiskImage = typeOfDiskImage
 
-if __name__ == "__main__":
-    main()
+    def perform(
+        self,
+        args,
+        imageManager: SingleDiskImageManager,
+        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+    ):
+        pass

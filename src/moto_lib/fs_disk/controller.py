@@ -16,7 +16,7 @@ or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with MO/TO tools.
-If not, see <https://www.gnu.org/licenses/>. 
+If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
@@ -28,7 +28,9 @@ from .catalog import (
     TypeOfDiskFile,
     TypeOfData,
 )
-from .block_allocation import BlockAllocation
+from .block_allocation import BlockAllocation, BlockStatus
+
+RESERVED_BLOCKS = [0, 40, 41]
 
 
 def _computeRequiredSlots(sizeOfData: int, sizeOfSlot: int) -> (int, int):
@@ -234,6 +236,26 @@ class FileSystemController:
                 b.setFree()
             self._bat = bat
             raise ValueError("no.more.space.in.catalog")
+
+    def initFileSystem(self):
+        # reset bat
+        bat = [
+            BlockAllocation(
+                i,
+                (
+                    BlockStatus.RESERVED.value
+                    if i in RESERVED_BLOCKS
+                    else BlockStatus.FREE.value
+                ),
+            )
+            for i in range(160)
+        ]
+        self._bat = bat
+
+        # fill catalog sectors with 0xff
+        empty_sector = bytes([0xFF for i in range(256)])
+        for s in range(2, 16):  # catalog is from sector 2 to 15 of track 20
+            self._diskSide.tracks[20].sectors[s].dataOfPayload = empty_sector
 
     def computeUsage(self) -> FileSystemUsage:
         used = 0
