@@ -1,7 +1,7 @@
 # Sporniket's MO/TO tools
 
 [![Latest version](https://img.shields.io/pypi/v/moto-tools-by-sporniket)](https://pypi.org/project/moto-tools-by-sporniket/releases)
-[![Workflow status](https://img.shields.io/github/workflow/status/sporniket/moto-tools/Python%20package)](https://github.com/sporniket/moto-tools/actions/workflows/python-app.yml)
+[![Workflow status](https://img.shields.io/github/actions/workflow/status/sporniket/moto-tools/python-app.yml)](https://github.com/sporniket/moto-tools/actions/workflows/python-app.yml)
 [![Download status](https://img.shields.io/pypi/dm/moto-tools-by-sporniket)](https://pypi.org/project/moto-tools-by-sporniket/)
 
 > [WARNING] Please read carefully this note before using this project. It contains important facts.
