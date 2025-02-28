@@ -3,10 +3,16 @@
 ## Synopsis
 
 ```
-python3 -m moto_sdar --create [--verbose] [--into <path>] [--reference <ref_archive.sd>] <archive.sd> [<source-files>...]
+python3 -m moto_sdar --add [--verbose] [--into <path>] <archive.sd> [<source-files>...]
 ```
 
-Assemble the designated files into a floppy disk archive suitable for the SDDrive. The disk archive MAY be created by starting from a reference disk archive, e.g. [an image with the DOS Basic](http://dcmoto.free.fr/programmes/dos-3.5/index.html) that would make the resulting image into a bootable disk.
+Add the designated files into an **already existing** floppy disk archive suitable for the SDDrive.
+
+```
+python3 -m moto_sdar --create [--verbose] [--into <path>] <archive.sd> [<source-files>...]
+```
+
+Assemble the designated files into a floppy disk archive suitable for the SDDrive. **If the archive file already exists, it is overwritten.**
 
 ```
 python3 -m moto_sdar --list [--verbose] <archive.sd>
@@ -22,7 +28,7 @@ Extract all the files contained inside a floppy disk archive readable by MO5 emu
 
 ## Mandatory arguments
 
-* `--create <archive.sd>` or `--list <archive.sd>` or `--extract <archive.sd>` : the operation to perform.
+* `--add <archive.sd>` or`--create <archive.sd>` or `--list <archive.sd>` or `--extract <archive.sd>` : the operation to perform.
 
 * `<archive.sd>` : the specified floppy disk archive, with the `fd` extension.
 
@@ -32,23 +38,17 @@ Extract all the files contained inside a floppy disk archive readable by MO5 emu
 
 * `--verbose` : each processed files is displayed in a tabulated format, showing
 
-> TODO update actual format
+  * the name and extension of the file
+  * the type of file (BASIC program, data, binary module or text) and data (binary or ascii)
+  * the size in bytes and blocks
 
-  * the type of file (tokenized **B**asic, Ascii **L**isting, **D**ata) ; binary files have no type indication
-  * the name and extension
-  * the size in bytes, and the number of data blocks it takes
+  Without `--verbose`, the command will only list the file names.
 
-  Without `--verbose`, the `--list` command will only list the file names.
-
-* `--into [path]` : directory where the created floppy disk archive or the extracted files will be stored ; when not specified, they are stored in the current directory.
-
-* `--reference <ref_archive.sd>` : references an archive that will serve as a basis for the created archive (the reference archive is left untouched). This allow the creation of _bootable_ disk images : by default `moto_sdar` will create an archive looking like a blank formatted floppy disk into which all the source files have been written, thus a _non bootable_ disk. To create a _bootable_ disk image, one must have e.g. [an image with the DOS Basic](http://dcmoto.free.fr/programmes/dos-3.5/index.html), and use it as reference.
+* `--into [path]` : directory where the created floppy disk archive OR the extracted files will be stored ; when not specified, they are stored in the current directory.
 
 ## File handling
 
 ### Archive creation
-
-> draft ; to update with actual behavior
 
 * Files with the extension `bas` will be added as BASIC, tokenized files, unless they are suffixed with `,a` to be added as BASIC, ascii listing files.
 * Files with the extension `bin` will be added as binany module files.
@@ -57,6 +57,7 @@ Extract all the files contained inside a floppy disk archive readable by MO5 emu
 
 ### Archive extraction
 
+* Each side is extracted in a separated folder `sideX` where `X` is the index of the side starting with zero.
 * Files will be extracted as expected. **If a file already exist, it is overwritten without warning.**
 
 ### Archive listing

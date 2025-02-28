@@ -38,6 +38,7 @@ from moto_lib.fs_disk.image_worker import (
     DiskImageContentEnumerator,
     DiskImageContentExtractor,
     DiskImageContentInjector,
+    DiskImageContentInjectorWithImageInitialization,
 )
 from moto_lib.fs_disk.catalog import TypeOfDiskFile, TypeOfData, CatalogEntryStatus
 from moto_lib.fs_disk.listener import (
@@ -119,10 +120,10 @@ If not, see <https://www.gnu.org/licenses/>. 
         )
         commandGroup.add_argument(
             "-r",
-            "--append",
+            "--add",
             dest="action",
             action="store_const",
-            const="append",
+            const="add",
             help=f"Add the designated files into the already existing designated disk archive.",
         )
 
@@ -145,16 +146,19 @@ If not, see <https://www.gnu.org/licenses/>. 
         self._typeOfArchive = typeOfArchive = TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
         self._archiveExtension = "sd"
         self._imageManagers = {
+            "add": DiskImageFromDiskManager,
             "create": SingleDiskImageManager,
             "extract": DiskImageFromDiskManager,
             "list": DiskImageFromDiskManager,
         }
         self._workers = {
-            "create": DiskImageContentInjector(typeOfArchive),
+            "add": DiskImageContentInjector(typeOfArchive),
+            "create": DiskImageContentInjectorWithImageInitialization(typeOfArchive),
             "extract": DiskImageContentExtractor(typeOfArchive),
             "list": DiskImageContentEnumerator(typeOfArchive),
         }
         self._typesOfProcessing = {
+            "add": TypeOfDiskImageProcessing.UPDATING,
             "create": TypeOfDiskImageProcessing.UPDATING,
             "extract": TypeOfDiskImageProcessing.EXTRACTING,
             "list": TypeOfDiskImageProcessing.LISTING,

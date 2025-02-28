@@ -55,9 +55,6 @@ class DiskImageContentInjector(DiskImageWorker):
             image (DiskImage): _description_
         """
         self._controllers = [FileSystemController(image.sides[i]) for i in range(4)]
-        for c in self._controllers:
-            c.initFileSystem()
-
         self._currentSide = 0
 
     @property
@@ -289,3 +286,13 @@ class DiskImageContentInjector(DiskImageWorker):
         imageManager.save()
 
         listener.onDone()
+
+
+class DiskImageContentInjectorWithImageInitialization(DiskImageContentInjector):
+    def __init__(self, typeOfDiskImage: TypeOfDiskImage):
+        super().__init__(typeOfDiskImage)
+
+    def _prepareControllers(self, image: DiskImage):
+        super()._prepareControllers(image)
+        for c in self._controllers:
+            c.initFileSystem()

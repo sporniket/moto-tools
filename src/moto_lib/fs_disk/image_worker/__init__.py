@@ -23,10 +23,14 @@ If not, see <https://www.gnu.org/licenses/>.
 from .base import DiskImageWorker
 from .content_enumerator import DiskImageContentEnumerator
 from .content_extractor import DiskImageContentExtractor
-from .content_injector import DiskImageContentInjector
+from .content_injector import (
+    DiskImageContentInjector,
+    DiskImageContentInjectorWithImageInitialization,
+)
 
 __all__ = [
     "DiskImageContentEnumerator",
     "DiskImageContentExtractor",
     "DiskImageContentInjector",
+    "DiskImageContentInjectorWithImageInitialization",
 ]
