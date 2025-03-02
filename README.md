@@ -37,6 +37,17 @@ The current list of tools :
 
 ### Release notes
 
+#### V0.0.5
+
+Interim version, `moto_sdar` is now usable, but archives created with it need to be tested on emulators and real hardware.
+
+* Fixes #35 : [bug][moto_bas2lst] It should not emit empty lines
+* Resolves #30 : [moto_sdar][moto_fdar] put content as a new catalog entry
+* Resolves #38 : [moto_lib] DiskSector allows to change the data
+* Resolves #41 : [moto_sdar][moto_fdar] Create a disk image
+* Resolves #42 : [moto_sdar][moto_fdar] display pre- or post- processing of a file 
+* Resolves #46 : [moto_sdar][moto_fdar] Update a disk image
+
 #### v0.0.4
 
 Interim version, work has progressed tremendously after a year of hiatus. Tools have limited implementation but are not complete.
