@@ -1,4 +1,5 @@
 """
+File system on disk.
 ---
 (c) 2022 David SPORN
 ---
@@ -19,22 +20,11 @@ If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
-from .consts import TypeOfTapeBlock
-from .block import TapeBlock
-from .block_descriptor import LeaderTapeBlockDescriptor
-from .listeners import (
-    TapeImageCliListener,
-    TapeArchiveCliListenerQuiet,
-    TapeArchiveCliListenerVerbose,
-)
-from .tape import Tape
+from .base import TapeImageWorker
+from .content_enumerator import TapeImageContentEnumerator
+from .content_extractor import TapeImageContentExtractor
+from .content_injector import TapeImageContentInjector
 
 __all__ = [
-    "LeaderTapeBlockDescriptor",
-    "Tape",
-    "TapeArchiveCliListener",
-    "TapeArchiveCliListenerQuiet",
-    "TapeArchiveCliListenerVerbose",
-    "TapeBlock",
-    "TypeOfTapeBlock",
+    "TapeImageWorker", "TapeImageContentEnumerator", "TapeImageContentExtractor", "TapeImageContentInjector"
 ]

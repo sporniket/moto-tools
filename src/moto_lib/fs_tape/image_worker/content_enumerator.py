@@ -22,23 +22,27 @@ If not, see <https://www.gnu.org/licenses/>.
 
 import os
 
-from ..image import TypeOfDiskImage
-from ..image_manager import SingleDiskImageManager
-from ..listener import DiskImageCliListener
+from .base import TapeImageWorker
 
+from ..image_manager import SingleTapeImageManager
+from ..listeners import TapeImageCliListener
 
-class DiskImageWorker:
-    """Base class to an implementation working on a disk image."""
-
-    def __init__(self, typeOfDiskImage: TypeOfDiskImage):
-        if typeOfDiskImage is None:
-            raise ValueError("error.undefined.type.of.disk.image")
-        self._typeOfDiskImage = typeOfDiskImage
-
+class TapeImageContentEnumerator(TapeImageWorker):
     def perform(
         self,
         args,
-        imageManager: SingleDiskImageManager,
-        listener: DiskImageCliListener,
+        imageManager: SingleTapeImageManager,
+        listener: TapeImageCliListener,
     ):
-        pass
+        tape = imageManager.image
+        block = tape.nextBlock()
+        while block is not None:
+            if block.type == TypeOfTapeBlock.LEADER:
+                desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
+                listener.onBeginFileBlock(desc)
+            elif block.type == TypeOfTapeBlock.EOF:
+                listener.onEndBlock()
+            else:
+                listener.onDataBlock(block)
+            block = tape.nextBlock()
+ 

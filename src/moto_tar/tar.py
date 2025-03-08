@@ -28,11 +28,13 @@ from enum import Enum
 
 from moto_lib.fs_tape import LeaderTapeBlockDescriptor, Tape, TapeBlock, TypeOfTapeBlock
 from moto_lib.fs_tape.listeners import (
-    TapeArchiveCliListener,
+    TapeImageCliListener,
     TapeArchiveCliListenerQuiet,
     TapeArchiveCliListenerVerbose,
 )
 
+from moto_lib.fs_tape.image_manager import *
+from moto_lib.fs_tape.image_worker import *
 
 class TapeArchiveCli:
     @staticmethod
@@ -83,19 +85,25 @@ If not, see <https://www.gnu.org/licenses/>. 
         commandGroup.add_argument(
             "-c",
             "--create",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="create",
             help=f"Assemble the designated files into the designated tape archive.",
         )
         commandGroup.add_argument(
             "-t",
             "--list",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="list",
             help=f"List all the files contained inside the designated tape archive.",
         )
         commandGroup.add_argument(
             "-x",
             "--extract",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="extract",
             help=f"Extract all the files contained inside the designated tape archive.",
         )
 
@@ -115,7 +123,7 @@ If not, see <https://www.gnu.org/licenses/>. 
     def __init__(self):
         pass
 
-    def createListener(self, operation: str, verbose: bool) -> TapeArchiveCliListener:
+    def createListener(self, operation: str, verbose: bool) -> TapeImageCliListener:
         return (
             TapeArchiveCliListenerVerbose(operation)
             if verbose
@@ -126,7 +134,7 @@ If not, see <https://www.gnu.org/licenses/>. 
         args = TapeArchiveCli.createArgParser().parse_args()
         sources = args.sources
         listener = self.createListener(
-            "adding" if args.create else "extracting" if args.extract else "",
+            args.action,
             args.verbose,
         )
         if args.create:

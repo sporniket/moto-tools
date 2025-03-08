@@ -44,7 +44,7 @@ class SingleDiskImageManager:
 
     """
 
-    def __init__(self, typeOfDiskImage: TypeOfDiskImage, filePath: str) -> DiskImage:
+    def __init__(self, typeOfDiskImage: TypeOfDiskImage, filePath: str):
         self._typeOfDiskImage = typeOfDiskImage
         self._filePath = filePath
         self.prepareImage()
