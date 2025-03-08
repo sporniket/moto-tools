@@ -65,7 +65,16 @@ def test_that_it_does_create_tape_archive():
         with redirect_stdout(io.StringIO()) as out:
             returnCode = TapeArchiveCli().run()
         assert returnCode == 0
-        assert out.getvalue() == ""
+        assert (
+            out.getvalue()
+            == """BANNER.BAS
+BANNER2.BAS
+C5000.BAS
+C5001.BAS
+C5001LST.BAS
+C5002.BAS
+"""
+        )
         pathActual = os.path.join(tmp_dir, output_archive)
         assert os.path.exists(pathActual) and os.path.isfile(pathActual)
         assert filecmp.cmp(

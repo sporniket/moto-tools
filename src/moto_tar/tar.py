@@ -26,62 +26,12 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter, FileType
 from typing import List, Union, Optional
 from enum import Enum
 
-from moto_lib import LeaderTapeBlockDescriptor, Tape, TapeBlock, TypeOfTapeBlock
-
-
-class TapeArchiveCliListener:
-    def __init__(self, operation: str, verbose: bool = False):
-        """Initialize the listener.
-
-        Args:
-            operation (str): "Adding", "Extracting" or ""
-            verbose (bool, optional): Enable verbose mode or not. Defaults to disabled.
-        """
-        self.operation = operation
-        self.verbose = verbose
-        self.blockIndex = 0
-
-    def onBeginFileBlock(self, descriptor: LeaderTapeBlockDescriptor):
-        self.blockIndex += 1
-        self.currentFile = descriptor
-        self.blockCount = 0
-        self.fileSize = 0
-        self.firstBlock = self.blockIndex
-
-    def onDataBlock(self, block: TapeBlock):
-        self.blockIndex += 1
-        self.blockCount += 1
-        self.fileSize += len(block.body)
-
-    def onEndBlock(self):
-        self.blockIndex += 1
-        if self.verbose:
-            # verbose mode
-            desc = self.currentFile
-            fileType = (
-                "BASIC"
-                if desc.fileType == 0
-                else "DATA" if desc.fileType == 1 else "BINARY"
-            )
-            fileMode = desc.fileMode
-            if desc.fileType == 0:
-                fileMode = "ASCII" if fileMode == 0xFFFF else "TOKEN"
-            print(
-                f"{desc.fileName}.{desc.fileExtension}\t{fileType}\t{fileMode}\t#{self.firstBlock}\t{self.fileSize} octets\t{self.blockCount} blocks."
-            )
-        elif len(self.operation) == 0:
-            # non verbose list
-            desc = self.currentFile
-            print(f"{desc.fileName}.{desc.fileExtension}")
-        self.currentFile = None
-
-    def onError(self, message: str):
-        desc = self.currentFile
-        print(
-            f"Error : {message}"
-            if desc is None
-            else f"Error on {desc.fileName}.{desc.fileExtension} : {message}"
-        )
+from moto_lib.fs_tape import LeaderTapeBlockDescriptor, Tape, TapeBlock, TypeOfTapeBlock
+from moto_lib.fs_tape.listeners import (
+    TapeArchiveCliListener,
+    TapeArchiveCliListenerQuiet,
+    TapeArchiveCliListenerVerbose,
+)
 
 
 class TapeArchiveCli:
@@ -165,10 +115,17 @@ If not, see <https://www.gnu.org/licenses/>. 
     def __init__(self):
         pass
 
+    def createListener(self, operation: str, verbose: bool) -> TapeArchiveCliListener:
+        return (
+            TapeArchiveCliListenerVerbose(operation)
+            if verbose
+            else TapeArchiveCliListenerQuiet(operation)
+        )
+
     def run(self) -> int:
         args = TapeArchiveCli.createArgParser().parse_args()
         sources = args.sources
-        listener = TapeArchiveCliListener(
+        listener = self.createListener(
             "adding" if args.create else "extracting" if args.extract else "",
             args.verbose,
         )
