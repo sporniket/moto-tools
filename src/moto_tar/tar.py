@@ -28,9 +28,19 @@ from enum import Enum
 
 from moto_lib.fs_tape import LeaderTapeBlockDescriptor, Tape, TapeBlock, TypeOfTapeBlock
 from moto_lib.fs_tape.listeners import (
-    TapeArchiveCliListener,
-    TapeArchiveCliListenerQuiet,
-    TapeArchiveCliListenerVerbose,
+    TapeImageCliListener,
+    TapeImageCliListenerQuiet,
+    TapeImageCliListenerVerbose,
+)
+
+from moto_lib.fs_tape.image_manager import (
+    SingleTapeImageManager,
+    TapeImageFromDiskManager,
+)
+from moto_lib.fs_tape.image_worker import (
+    TapeImageContentEnumerator,
+    TapeImageContentExtractor,
+    TapeImageContentInjector,
 )
 
 
@@ -83,19 +93,25 @@ If not, see <https://www.gnu.org/licenses/>. 
         commandGroup.add_argument(
             "-c",
             "--create",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="create",
             help=f"Assemble the designated files into the designated tape archive.",
         )
         commandGroup.add_argument(
             "-t",
             "--list",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="list",
             help=f"List all the files contained inside the designated tape archive.",
         )
         commandGroup.add_argument(
             "-x",
             "--extract",
-            action="store_true",
+            dest="action",
+            action="store_const",
+            const="extract",
             help=f"Extract all the files contained inside the designated tape archive.",
         )
 
@@ -113,99 +129,43 @@ If not, see <https://www.gnu.org/licenses/>. 
         return parser
 
     def __init__(self):
+        self._imageManagers = {
+            # "add": TapeImageFromDiskManager,
+            "create": SingleTapeImageManager,
+            "extract": TapeImageFromDiskManager,
+            "list": TapeImageFromDiskManager,
+        }
+        self._workers = {
+            # "add": TapeImageContentInjector(),
+            "create": TapeImageContentInjector(),
+            "extract": TapeImageContentExtractor(),
+            "list": TapeImageContentEnumerator(),
+        }
         pass
 
-    def createListener(self, operation: str, verbose: bool) -> TapeArchiveCliListener:
+    def createListener(self, operation: str, verbose: bool) -> TapeImageCliListener:
         return (
-            TapeArchiveCliListenerVerbose(operation)
+            TapeImageCliListenerVerbose(operation)
             if verbose
-            else TapeArchiveCliListenerQuiet(operation)
+            else TapeImageCliListenerQuiet(operation)
         )
+
+    def createImageManager(self, args) -> SingleTapeImageManager:
+        if args.action not in self._imageManagers:
+            raise RuntimeError(f"action.not.implemented.yet:{args.action}")
+        return self._imageManagers[args.action](args.archive)
 
     def run(self) -> int:
         args = TapeArchiveCli.createArgParser().parse_args()
         sources = args.sources
+
         listener = self.createListener(
-            "adding" if args.create else "extracting" if args.extract else "",
+            args.action,
             args.verbose,
         )
-        if args.create:
-            tape = Tape()
-            for src in sources:
-                dotPos = src.rfind(".")
-                fileName = os.path.basename(src.upper())
-                fileExtension = ""
-                fileType = 2  # binary
-                fileMode = 0
-                if dotPos > -1:
-                    fileName = os.path.basename(src[0:dotPos].upper())
-                    if len(fileName) > 8:
-                        fileName = fileName[0:8]
-                    fileExtension = src[dotPos + 1 :].upper()
-                    if fileExtension == "BAS,A":
-                        fileExtension = "BAS"
-                        fileType = 0  # basic
-                        fileMode = 0xFFFF  # -1, ascii listing
-                        src = src[:-2]
-                    elif fileExtension == "BAS":
-                        fileType = 0  # basic
-                    elif fileExtension == "CSV":
-                        # TODO check the actual format (separator 0xD ? )
-                        fileType = 1  # TODO check that file created by basic file commands have type 1 / data
-                leadBloc = LeaderTapeBlockDescriptor(
-                    fileName, fileExtension, fileType, fileMode
-                )
-                try:
-                    tape.writeBlock(leadBloc.toTapeBlock())
-                    listener.onBeginFileBlock(leadBloc)
-                    with open(src, "rb") as f:
-                        data = f.read()
-                    dataPos = 0
-                    dataMax = len(data)
-                    dataRemaining = dataMax
-                    while dataPos < dataMax:
-                        dataNextPos = (
-                            dataPos + dataRemaining
-                            if dataRemaining < 254
-                            else dataPos + 254
-                        )
-                        block = TapeBlock.buildFromData(data[dataPos:dataNextPos])
-                        tape.writeBlock(block)
-                        listener.onDataBlock(block)
-                        dataPos = dataNextPos
-                        dataRemaining = dataMax - dataPos
-                    tape.writeBlock(TapeBlock.buildFromData(None, TypeOfTapeBlock.EOF))
-                    listener.onEndBlock()
-                except OverflowError:
-                    print("Too much data, abort creation.")
-                    return 1
-            with open(args.archive, "wb") as tar:
-                tar.write(tape.rawData)
+        imageManager = self.createImageManager(args)
 
-        elif args.list or args.extract:
-            with open(args.archive, "rb") as tar:
-                tape = Tape(tar.read())
-            targetDir = os.path.dirname(args.archive)
-            block = tape.nextBlock()
-            while block is not None:
-                if block.type == TypeOfTapeBlock.LEADER:
-                    desc = LeaderTapeBlockDescriptor.buildFromTapeBlock(block.rawData)
-                    listener.onBeginFileBlock(desc)
-                    if args.extract:
-                        fileContent = bytearray()  # initialize accumulator
-                elif block.type == TypeOfTapeBlock.EOF:
-                    if args.extract:
-                        with open(
-                            os.path.join(
-                                targetDir, f"{desc.fileName}.{desc.fileExtension}"
-                            ),
-                            "wb",
-                        ) as f:
-                            f.write(fileContent)
-                    listener.onEndBlock()
-                else:
-                    listener.onDataBlock(block)
-                    if args.extract:
-                        fileContent += block.body  # update accumulator
-                block = tape.nextBlock()
-        return 0
+        if args.action not in self._workers:
+            raise RuntimeError(f"action.not.implemented.yet:{args.action}")
+
+        return self._workers[args.action].perform(args, imageManager, listener)

@@ -19,22 +19,31 @@ If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
-from .consts import TypeOfTapeBlock
-from .block import TapeBlock
-from .block_descriptor import LeaderTapeBlockDescriptor
-from .listeners import (
-    TapeImageCliListener,
-    TapeImageCliListenerQuiet,
-    TapeImageCliListenerVerbose,
-)
 from .tape import Tape
 
-__all__ = [
-    "LeaderTapeBlockDescriptor",
-    "Tape",
-    "TapeImageCliListener",
-    "TapeImageCliListenerQuiet",
-    "TapeImageCliListenerVerbose",
-    "TapeBlock",
-    "TypeOfTapeBlock",
-]
+
+class SingleTapeImageManager:
+    def __init__(self, filePath: str):
+        self._filePath = filePath
+        self.prepareImage()
+
+    def prepareImage(self):
+        """Override this method to get your image from somewhere.
+
+        This implementation create a tape image from nothingness.
+        """
+        self._image = Tape()
+
+    @property
+    def image(self) -> Tape:
+        return self._image
+
+    def save(self):
+        with open(self._filePath, "wb") as f:
+            f.write(self._image.rawData)
+
+
+class TapeImageFromDiskManager(SingleTapeImageManager):
+    def prepareImage(self):
+        with open(self._filePath, "rb") as f:
+            self._image = Tape(f.read())

@@ -1,4 +1,5 @@
 """
+File system on disk.
 ---
 (c) 2022 David SPORN
 ---
@@ -19,22 +20,25 @@ If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
-from .consts import TypeOfTapeBlock
-from .block import TapeBlock
-from .block_descriptor import LeaderTapeBlockDescriptor
-from .listeners import (
-    TapeImageCliListener,
-    TapeImageCliListenerQuiet,
-    TapeImageCliListenerVerbose,
-)
-from .tape import Tape
+import os
 
-__all__ = [
-    "LeaderTapeBlockDescriptor",
-    "Tape",
-    "TapeImageCliListener",
-    "TapeImageCliListenerQuiet",
-    "TapeImageCliListenerVerbose",
-    "TapeBlock",
-    "TypeOfTapeBlock",
-]
+from abc import ABC, abstractmethod
+
+from ..image_manager import SingleTapeImageManager
+from ..listeners import TapeImageCliListener
+
+
+class TapeImageWorker(ABC):
+    """Base class to an implementation working on a disk image."""
+
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def perform(
+        self,
+        args,
+        imageManager: SingleTapeImageManager,
+        listener: TapeImageCliListener,
+    ) -> int:
+        return 0

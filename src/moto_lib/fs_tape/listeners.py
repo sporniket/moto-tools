@@ -31,7 +31,7 @@ from .block import TapeBlock
 from .block_descriptor import LeaderTapeBlockDescriptor
 
 
-class TapeArchiveCliListener(ABC):
+class TapeImageCliListener(ABC):
     def __init__(self, operation: str):
         """Initialize the listener.
 
@@ -72,7 +72,7 @@ class TapeArchiveCliListener(ABC):
         )
 
 
-class TapeArchiveCliListenerVerbose(TapeArchiveCliListener):
+class TapeImageCliListenerVerbose(TapeImageCliListener):
     def printOnEndBlock(self):
         desc = self.currentFile
         fileType = (
@@ -88,7 +88,7 @@ class TapeArchiveCliListenerVerbose(TapeArchiveCliListener):
         )
 
 
-class TapeArchiveCliListenerQuiet(TapeArchiveCliListener):
+class TapeImageCliListenerQuiet(TapeImageCliListener):
     def printOnEndBlock(self):
         desc = self.currentFile
         print(f"{desc.fileName}.{desc.fileExtension}")
