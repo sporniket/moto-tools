@@ -24,7 +24,7 @@ import os
 
 from ..image import TypeOfDiskImage
 from ..image_manager import SingleDiskImageManager
-from ..listener import DiskImageCliListenerQuiet, DiskImageCliListenerVerbose
+from ..listener import DiskImageCliListener
 
 
 class DiskImageWorker:
@@ -39,6 +39,6 @@ class DiskImageWorker:
         self,
         args,
         imageManager: SingleDiskImageManager,
-        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        listener: DiskImageCliListener,
     ):
         pass

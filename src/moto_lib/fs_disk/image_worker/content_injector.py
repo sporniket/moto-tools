@@ -26,7 +26,7 @@ from .base import DiskImageWorker
 
 from ..image import TypeOfDiskImage, DiskImage
 from ..image_manager import SingleDiskImageManager
-from ..listener import DiskImageCliListenerQuiet, DiskImageCliListenerVerbose
+from ..listener import DiskImageCliListener
 from ..catalog import TypeOfData, TypeOfDiskFile, CatalogEntryStatus
 from ..controller import FileSystemController
 
@@ -88,7 +88,7 @@ class DiskImageContentInjector(DiskImageWorker):
 
     def processFileAsTxt(
         self,
-        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        listener: DiskImageCliListener,
         fileName: str,
         fileExtension: str,
         fileData: bytes,
@@ -104,7 +104,7 @@ class DiskImageContentInjector(DiskImageWorker):
 
     def processFileAsBinaryModule(
         self,
-        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        listener: DiskImageCliListener,
         fileName: str,
         fileExtension: str,
         fileData: bytes,
@@ -120,7 +120,7 @@ class DiskImageContentInjector(DiskImageWorker):
 
     def processFileAsTokenizedBasic(
         self,
-        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        listener: DiskImageCliListener,
         fileName: str,
         fileExtension: str,
         fileData: bytes,
@@ -136,7 +136,7 @@ class DiskImageContentInjector(DiskImageWorker):
 
     def processFileAsAsciiBasic(
         self,
-        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        listener: DiskImageCliListener,
         fileName: str,
         fileExtension: str,
         fileData: bytes,
@@ -152,7 +152,7 @@ class DiskImageContentInjector(DiskImageWorker):
 
     def processFileAsDataForBasic(
         self,
-        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        listener: DiskImageCliListener,
         fileName: str,
         fileExtension: str,
         fileData: bytes,
@@ -168,7 +168,7 @@ class DiskImageContentInjector(DiskImageWorker):
 
     def writeFile(
         self,
-        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        listener: DiskImageCliListener,
         fileName: str,
         fileExtension: str,
         fileType: TypeOfDiskFile,
@@ -221,7 +221,7 @@ class DiskImageContentInjector(DiskImageWorker):
         self,
         args,
         imageManager: SingleDiskImageManager,
-        listener: DiskImageCliListenerQuiet or DiskImageCliListenerVerbose,
+        listener: DiskImageCliListener,
     ):
         image = imageManager.image
         self._prepareControllers(image)
