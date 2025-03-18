@@ -30,7 +30,7 @@ from unittest.mock import patch
 from contextlib import redirect_stdout
 
 # from moto_fdar import DiskArchiveCli
-from moto_sdar import DiskArchiveCli
+from moto_lib.fs_disk.cli import DiskArchiveCli
 from moto_lib.fs_disk.image import DiskImage, DiskSide, TypeOfDiskImage
 from moto_lib.fs_disk.controller import FileSystemController, FileSystemUsage
 

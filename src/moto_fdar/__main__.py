@@ -22,10 +22,11 @@ If not, see <https://www.gnu.org/licenses/>.
 import sys
 
 from moto_lib.fs_disk.cli import DiskArchiveCli
+from moto_lib.fs_disk.image import TypeOfDiskImage
 
 
 def main():
-    sys.exit(DiskArchiveCli().run())
+    sys.exit(DiskArchiveCli(typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE).run())
 
 
 if __name__ == "__main__":

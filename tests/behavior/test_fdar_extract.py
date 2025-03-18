@@ -29,8 +29,8 @@ from typing import List, Union, Optional
 from unittest.mock import patch
 from contextlib import redirect_stdout
 
-# from moto_fdar import DiskArchiveCli
 from moto_lib.fs_disk.cli import DiskArchiveCli
+from moto_lib.fs_disk.image import TypeOfDiskImage
 
 from .utils import (
     initializeTmpWorkspace,
@@ -40,7 +40,7 @@ from .utils import (
 # input_archive = "sporny-basic.k7"
 
 source_dir = os.path.join("tests", "data")
-SOURCE_ARCHIVE = "10_lsystem_mo5__2023-10-14.sd"
+SOURCE_ARCHIVE = "10_lsystem_mo5__2023-10-14.fd"
 
 expected_dir = os.path.join("tests", "data.expected", f"extracted__{SOURCE_ARCHIVE}")
 
@@ -51,7 +51,9 @@ def test_that_it_does_extract_files():
     baseArgs = ["prog", "--extract", os.path.join(tmp_dir, SOURCE_ARCHIVE)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
@@ -107,7 +109,9 @@ def test_that_verbose_mode_does_extract_files_with_details():
     baseArgs = ["prog", "--extract", "--verbose", os.path.join(tmp_dir, SOURCE_ARCHIVE)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()

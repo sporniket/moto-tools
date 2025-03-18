@@ -19,17 +19,9 @@ If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
-import os
-import sys
-
-from abc import ABC, abstractmethod
 from argparse import ArgumentParser, RawDescriptionHelpFormatter, FileType
 
-from typing import List, Union, Optional
-from enum import Enum
-
-from moto_lib.fs_disk.controller import FileSystemController
-from moto_lib.fs_disk.image import DiskImage, DiskSide, TypeOfDiskImage
+from moto_lib.fs_disk.image import TypeOfDiskImage
 from moto_lib.fs_disk.image_manager import (
     SingleDiskImageManager,
     DiskImageFromDiskManager,
@@ -40,7 +32,6 @@ from moto_lib.fs_disk.image_worker import (
     DiskImageContentInjector,
     DiskImageContentInjectorWithImageInitialization,
 )
-from moto_lib.fs_disk.catalog import TypeOfDiskFile, TypeOfData, CatalogEntryStatus
 from moto_lib.fs_disk.listener import (
     DiskImageCliListenerQuiet,
     DiskImageCliListenerVerbose,
@@ -49,10 +40,11 @@ from moto_lib.fs_disk.listener import (
 
 
 class DiskArchiveCli:
-    @staticmethod
-    def createArgParser() -> ArgumentParser:
+    def createArgParser(self) -> ArgumentParser:
+        prog_name = f"moto_{self._archiveExtension}ar"
+
         parser = ArgumentParser(
-            prog="python3 -m moto_sdar",
+            prog=f"python3 -m {prog_name}",
             description="Assemble, list or extract files into or from a disk archive usable with MO/TO computer emulators.",
             epilog="""---
 (c) 2022 David SPORN
@@ -80,7 +72,7 @@ If not, see <https://www.gnu.org/licenses/>. 
         # Add the arguments
         parser.add_argument(
             "archive",
-            metavar="<archive.sd>",
+            metavar=f"<archive.{self._archiveExtension}>",
             type=str,
             help="the designated disk archive",
         )
@@ -142,9 +134,13 @@ If not, see <https://www.gnu.org/licenses/>. 
 
         return parser
 
-    def __init__(self):
-        self._typeOfArchive = typeOfArchive = TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
-        self._archiveExtension = "sd"
+    def __init__(
+        self, *, typeOfArchive: TypeOfDiskImage = TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+    ):
+        self._typeOfArchive = typeOfArchive
+        self._archiveExtension = (
+            "fd" if typeOfArchive == TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE else "sd"
+        )
         self._imageManagers = {
             "add": DiskImageFromDiskManager,
             "create": SingleDiskImageManager,
@@ -183,7 +179,7 @@ If not, see <https://www.gnu.org/licenses/>. 
         return self._imageManagers[args.action](self._typeOfArchive, args.archive)
 
     def run(self) -> int:
-        args = DiskArchiveCli.createArgParser().parse_args()
+        args = self.createArgParser().parse_args()
 
         listener = self.createListener(args)
 

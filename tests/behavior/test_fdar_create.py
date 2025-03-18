@@ -29,7 +29,6 @@ from typing import List, Union, Optional
 from unittest.mock import patch
 from contextlib import redirect_stdout
 
-# from moto_fdar import DiskArchiveCli
 from moto_lib.fs_disk.cli import DiskArchiveCli
 from moto_lib.fs_disk.image import DiskImage, DiskSide, TypeOfDiskImage
 from moto_lib.fs_disk.controller import FileSystemController, FileSystemUsage
@@ -67,107 +66,7 @@ REJECTED_FILESET = [FILE_LONG_NAME, FILE_LONG_EXTENSION]
 
 
 # File name of created archive
-FILE_IMAGE = "result.sd"
-
-
-def prepareAndVerifyInitialDiskImage(tmp_dir: str):
-    sourceFileSet = COMMON_FILESET[0:2]
-    createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
-    baseArgs = ["prog", "--create", createdImageFile]
-    sourceArgs = sourceFileSet
-    sourceArgs[1] = sourceArgs[1] + ",a"
-    with patch.object(
-        sys, "argv", baseArgs + [os.path.join(tmp_dir, f) for f in sourceArgs]
-    ):
-        with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
-        assert returnCode == 0
-        assert (
-            out.getvalue()
-            == f"""Side 0
-  A.BAS...ok
-  B.BAS...ok
-2 files
----
-Side 1
-0 files
----
-Side 2
-0 files
----
-Side 3
-0 files
----
-TOTAL
-2 files
-"""
-        )
-
-        # Verify archive file
-        assert os.path.exists(createdImageFile)
-        # -- load the binary file as DiskImage
-        with open(createdImageFile, mode="rb") as infile:
-            actualImageData = infile.read()
-        actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
-        )
-        # -- verify side 0
-        fs = FileSystemController(actualImage.sides[0])
-        usage = fs.computeUsage()
-        assert usage.used == 2
-        assert usage.reserved == 3
-        assert usage.free == 155
-        # -- -- get catalog and verify
-        catalog = fs.listFiles()
-        assert len(catalog) == 2
-        assert [f.toDict() for f in catalog] == [
-            {
-                "extension": "BAS",
-                "name": "A       ",
-                "sizeInBlocks": 1,
-                "sizeInBytes": 11,
-                "status": "ALIVE",
-                "typeOfData": "TOKEN",
-                "typeOfFile": "BASIC",
-            },
-            {
-                "extension": "BAS",
-                "name": "B       ",
-                "sizeInBlocks": 1,
-                "sizeInBytes": 11,
-                "status": "ALIVE",
-                "typeOfData": "ASCII",
-                "typeOfFile": "BASIC",
-            },
-        ]
-        assert [fs.readFile(f) for f in catalog] == [
-            d
-            for d in [
-                "aaaaaaaaaa\n".encode(encoding="ascii"),
-                "bbbbbbbbbb\n".encode(encoding="ascii"),
-            ]
-        ]
-        # -- verify side 1
-        fs = FileSystemController(actualImage.sides[1])
-        usage = fs.computeUsage()
-        assert usage.used == 0
-        assert usage.reserved == 3
-        assert usage.free == 157
-        assert len(fs.listFiles()) == 0
-        # -- verify side 2
-        fs = FileSystemController(actualImage.sides[2])
-        usage = fs.computeUsage()
-        assert usage.used == 0
-        assert usage.reserved == 3
-        assert usage.free == 157
-        assert len(fs.listFiles()) == 0
-        # -- verify side 3
-        fs = FileSystemController(actualImage.sides[3])
-        usage = fs.computeUsage()
-        assert usage.used == 0
-        assert usage.reserved == 3
-        assert usage.free == 157
-        assert len(fs.listFiles()) == 0
+FILE_IMAGE = "result.fd"
 
 
 def prepareBigFileContent(size: int) -> bytes:
@@ -194,33 +93,35 @@ def prepareBigFileContent(size: int) -> bytes:
     return bytes(result)
 
 
-def test_that_it_does_update_image_file():
+def test_that_it_does_create_image_file():
     sourceFileSet = COMMON_FILESET + REJECTED_FILESET
     tmp_dir = initializeTmpWorkspace(
         [os.path.join(source_dir, f) for f in sourceFileSet]
     )
-    prepareAndVerifyInitialDiskImage(tmp_dir)
-
-    sourceFileSet = sourceFileSet[2:]
-    updatedImageFile = os.path.join(tmp_dir, FILE_IMAGE)
-    baseArgs = ["prog", "--add", updatedImageFile]
+    createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
+    baseArgs = ["prog", "--create", createdImageFile]
     sourceArgs = sourceFileSet + [FILE_NOT_FOUND]
+    sourceArgs[1] = sourceArgs[1] + ",a"
     with patch.object(
         sys, "argv", baseArgs + [os.path.join(tmp_dir, f) for f in sourceArgs]
     ):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
             == f"""Side 0
+  A.BAS...ok
+  B.BAS...ok
   C.FOO...ok
   D.TXT...ok
   E.BIN...ok
   -- too long name : {tmp_dir}/too_long_name.foo
   -- too long extension : {tmp_dir}/too_long.extension
   -- not found : {tmp_dir}/whatever.foo
-3 files
+5 files
 ---
 Side 1
 0 files
@@ -232,17 +133,17 @@ Side 3
 0 files
 ---
 TOTAL
-3 files
+5 files
 """
         )
 
         # Verify archive file
-        assert os.path.exists(updatedImageFile)
+        assert os.path.exists(createdImageFile)
         # -- load the binary file as DiskImage
-        with open(updatedImageFile, mode="rb") as infile:
+        with open(createdImageFile, mode="rb") as infile:
             actualImageData = infile.read()
         actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         )
         # -- verify side 0
         fs = FileSystemController(actualImage.sides[0])
@@ -338,21 +239,29 @@ def test_that_it_goes_to_the_next_disk_side_with_eos_switch():
     tmp_dir = initializeTmpWorkspace(
         [os.path.join(source_dir, f) for f in sourceFileSet]
     )
-    prepareAndVerifyInitialDiskImage(tmp_dir)
-
-    sourceFileSet = sourceFileSet[2:]
-    updatedImageFile = os.path.join(tmp_dir, FILE_IMAGE)
-    baseArgs = ["prog", "--add", updatedImageFile]
+    createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
+    baseArgs = ["prog", "--create", createdImageFile]
     sourceArgs = [os.path.join(tmp_dir, f) for f in sourceFileSet]
-    sourceArgs = ["--eos", sourceArgs[0], "--eos", "--eos"] + sourceArgs[1:]
+    sourceArgs[1] = sourceArgs[1] + ",a"
+    sourceArgs = (
+        sourceArgs[0:2]
+        + ["--eos"]
+        + sourceArgs[2:3]
+        + ["--eos", "--eos"]
+        + sourceArgs[3:]
+    )
     with patch.object(sys, "argv", baseArgs + ["--"] + sourceArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
             == f"""Side 0
-0 files
+  A.BAS...ok
+  B.BAS...ok
+2 files
 ---
 Side 1
   C.FOO...ok
@@ -367,17 +276,17 @@ Side 3
 2 files
 ---
 TOTAL
-3 files
+5 files
 """
         )
 
         # Verify archive file
-        assert os.path.exists(updatedImageFile)
+        assert os.path.exists(createdImageFile)
         # -- load the binary file as DiskImage
-        with open(updatedImageFile, mode="rb") as infile:
+        with open(createdImageFile, mode="rb") as infile:
             actualImageData = infile.read()
         actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         )
         # -- verify side 0
         fs = FileSystemController(actualImage.sides[0])
@@ -492,31 +401,34 @@ def test_that_it_goes_to_the_next_disk_side_when_the_file_is_too_big_for_the_cur
     tmp_dir = initializeTmpWorkspace(
         [os.path.join(source_dir, f) for f in sourceFileSet]
     )
-    prepareAndVerifyInitialDiskImage(tmp_dir)
 
-    sourceFileSet = sourceFileSet[2:]
     bigFileName = os.path.join(tmp_dir, FILE_G)
     bigFileContent = prepareBigFileContent(312000)  # needs 153 blocks
     with open(bigFileName, "wb") as f:
         f.write(bigFileContent)
 
     # execute
-    updatedImageFile = os.path.join(tmp_dir, FILE_IMAGE)
-    baseArgs = ["prog", "--add", updatedImageFile]
+    createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
+    baseArgs = ["prog", "--create", createdImageFile]
     sourceArgs = [os.path.join(tmp_dir, f) for f in sourceFileSet]
+    sourceArgs[1] = sourceArgs[1] + ",a"
     sourceArgs.append(bigFileName)
     with patch.object(sys, "argv", baseArgs + sourceArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
             == f"""Side 0
+  A.BAS...ok
+  B.BAS...ok
   C.FOO...ok
   D.TXT...ok
   E.BIN...ok
   G.DAT...too big
-3 files
+5 files
 ---
 Side 1
   G.DAT...ok
@@ -529,17 +441,17 @@ Side 3
 0 files
 ---
 TOTAL
-4 files
+6 files
 """
         )
 
         # Verify archive file
-        assert os.path.exists(updatedImageFile)
+        assert os.path.exists(createdImageFile)
         # -- load the binary file as DiskImage
-        with open(updatedImageFile, mode="rb") as infile:
+        with open(createdImageFile, mode="rb") as infile:
             actualImageData = infile.read()
         actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         )
         # -- verify side 0
         fs = FileSystemController(actualImage.sides[0])
@@ -649,16 +561,16 @@ def test_that_it_discards_all_files_when_eos_switch_is_used_too_much_before():
     tmp_dir = initializeTmpWorkspace(
         [os.path.join(source_dir, f) for f in sourceFileSet]
     )
-    prepareAndVerifyInitialDiskImage(tmp_dir)
-
-    sourceFileSet = sourceFileSet[2:]
-    updatedImageFile = os.path.join(tmp_dir, FILE_IMAGE)
-    baseArgs = ["prog", "--add", updatedImageFile]
+    createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
+    baseArgs = ["prog", "--create", createdImageFile]
     sourceArgs = [os.path.join(tmp_dir, f) for f in sourceFileSet]
+    sourceArgs[1] = sourceArgs[1] + ",a"
     tooMuchEoses = ["--eos", "--eos", "--eos", "--eos"]
     with patch.object(sys, "argv", baseArgs + ["--"] + tooMuchEoses + sourceArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
@@ -680,47 +592,16 @@ TOTAL
         )
 
         # Verify archive file
-        assert os.path.exists(updatedImageFile)
+        assert os.path.exists(createdImageFile)
         # -- load the binary file as DiskImage
-        with open(updatedImageFile, mode="rb") as infile:
+        with open(createdImageFile, mode="rb") as infile:
             actualImageData = infile.read()
         actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         )
-        # -- -- get catalog and verify
-        fs = FileSystemController(actualImage.sides[0])
-        catalog = fs.listFiles()
-        assert len(catalog) == 2
-        assert [f.toDict() for f in catalog] == [
-            {
-                "extension": "BAS",
-                "name": "A       ",
-                "sizeInBlocks": 1,
-                "sizeInBytes": 11,
-                "status": "ALIVE",
-                "typeOfData": "TOKEN",
-                "typeOfFile": "BASIC",
-            },
-            {
-                "extension": "BAS",
-                "name": "B       ",
-                "sizeInBlocks": 1,
-                "sizeInBytes": 11,
-                "status": "ALIVE",
-                "typeOfData": "ASCII",
-                "typeOfFile": "BASIC",
-            },
-        ]
-        assert [fs.readFile(f) for f in catalog] == [
-            d
-            for d in [
-                "aaaaaaaaaa\n".encode(encoding="ascii"),
-                "bbbbbbbbbb\n".encode(encoding="ascii"),
-            ]
-        ]
-        # -- verify the other sides
-        for s in range(1, 4):
-            fs = FileSystemController(actualImage.sides[s])
+        # -- verify each side
+        for s in range(4):
+            fs = FileSystemController(actualImage.sides[0])
             usage = fs.computeUsage()
             assert usage.used == 0
             assert usage.reserved == 3

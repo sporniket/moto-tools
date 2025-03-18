@@ -19,14 +19,6 @@ If not, see <https://www.gnu.org/licenses/>.
 ---
 """
 
-import sys
+from .sdar import *
 
-from moto_lib.fs_disk.cli import DiskArchiveCli
-
-
-def main():
-    sys.exit(DiskArchiveCli().run())
-
-
-if __name__ == "__main__":
-    main()
+__all__ = ["DiskArchiveCli"]

@@ -29,7 +29,6 @@ from typing import List, Union, Optional
 from unittest.mock import patch
 from contextlib import redirect_stdout
 
-# from moto_fdar import DiskArchiveCli
 from moto_lib.fs_disk.cli import DiskArchiveCli
 from moto_lib.fs_disk.image import DiskImage, DiskSide, TypeOfDiskImage
 from moto_lib.fs_disk.controller import FileSystemController, FileSystemUsage
@@ -67,7 +66,7 @@ REJECTED_FILESET = [FILE_LONG_NAME, FILE_LONG_EXTENSION]
 
 
 # File name of created archive
-FILE_IMAGE = "result.sd"
+FILE_IMAGE = "result.fd"
 
 
 def prepareAndVerifyInitialDiskImage(tmp_dir: str):
@@ -80,7 +79,9 @@ def prepareAndVerifyInitialDiskImage(tmp_dir: str):
         sys, "argv", baseArgs + [os.path.join(tmp_dir, f) for f in sourceArgs]
     ):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
@@ -109,7 +110,7 @@ TOTAL
         with open(createdImageFile, mode="rb") as infile:
             actualImageData = infile.read()
         actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         )
         # -- verify side 0
         fs = FileSystemController(actualImage.sides[0])
@@ -209,7 +210,9 @@ def test_that_it_does_update_image_file():
         sys, "argv", baseArgs + [os.path.join(tmp_dir, f) for f in sourceArgs]
     ):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
@@ -242,7 +245,7 @@ TOTAL
         with open(updatedImageFile, mode="rb") as infile:
             actualImageData = infile.read()
         actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         )
         # -- verify side 0
         fs = FileSystemController(actualImage.sides[0])
@@ -347,7 +350,9 @@ def test_that_it_goes_to_the_next_disk_side_with_eos_switch():
     sourceArgs = ["--eos", sourceArgs[0], "--eos", "--eos"] + sourceArgs[1:]
     with patch.object(sys, "argv", baseArgs + ["--"] + sourceArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
@@ -377,7 +382,7 @@ TOTAL
         with open(updatedImageFile, mode="rb") as infile:
             actualImageData = infile.read()
         actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         )
         # -- verify side 0
         fs = FileSystemController(actualImage.sides[0])
@@ -507,7 +512,9 @@ def test_that_it_goes_to_the_next_disk_side_when_the_file_is_too_big_for_the_cur
     sourceArgs.append(bigFileName)
     with patch.object(sys, "argv", baseArgs + sourceArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
@@ -539,7 +546,7 @@ TOTAL
         with open(updatedImageFile, mode="rb") as infile:
             actualImageData = infile.read()
         actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         )
         # -- verify side 0
         fs = FileSystemController(actualImage.sides[0])
@@ -658,7 +665,9 @@ def test_that_it_discards_all_files_when_eos_switch_is_used_too_much_before():
     tooMuchEoses = ["--eos", "--eos", "--eos", "--eos"]
     with patch.object(sys, "argv", baseArgs + ["--"] + tooMuchEoses + sourceArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
@@ -685,7 +694,7 @@ TOTAL
         with open(updatedImageFile, mode="rb") as infile:
             actualImageData = infile.read()
         actualImage = DiskImage(
-            actualImageData, typeOfDiskImage=TypeOfDiskImage.SDDRIVE_FLOPPY_IMAGE
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
         )
         # -- -- get catalog and verify
         fs = FileSystemController(actualImage.sides[0])

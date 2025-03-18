@@ -29,8 +29,8 @@ from typing import List, Union, Optional
 from unittest.mock import patch
 from contextlib import redirect_stdout
 
-# from moto_fdar import DiskArchiveCli
 from moto_lib.fs_disk.cli import DiskArchiveCli
+from moto_lib.fs_disk.image import TypeOfDiskImage
 
 from .utils import (
     initializeTmpWorkspace,
@@ -41,14 +41,16 @@ from .utils import (
 
 source_dir = os.path.join("tests", "data")
 
-SOURCE_ARCHIVE = "10_lsystem_mo5__2023-10-14.sd"
+SOURCE_ARCHIVE = "10_lsystem_mo5__2023-10-14.fd"
 
 
 def test_that_it_does_list_files():
     baseArgs = ["prog", "--list", os.path.join(source_dir, SOURCE_ARCHIVE)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
@@ -91,7 +93,9 @@ def test_that_verbose_mode_does_list_files_with_details():
     baseArgs = ["prog", "--list", "--verbose", os.path.join(source_dir, SOURCE_ARCHIVE)]
     with patch.object(sys, "argv", baseArgs):
         with redirect_stdout(io.StringIO()) as out:
-            returnCode = DiskArchiveCli().run()
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
         assert returnCode == 0
         assert (
             out.getvalue()
