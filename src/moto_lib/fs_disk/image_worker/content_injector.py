@@ -42,6 +42,7 @@ class DiskImageContentInjector(DiskImageWorker):
             "BAS,A": self.processFileAsAsciiBasic,
             "BIN": self.processFileAsBinaryModule,
             "TXT": self.processFileAsTxt,
+            "AUTO.BAT": self.processFileAsTokenizedBasic,
         }
 
     ###########################################
@@ -263,10 +264,15 @@ class DiskImageContentInjector(DiskImageWorker):
                 fileData = sourceFile.read()
 
             # dispatch to a processor
+            fullFileName = f"{fileName}.{fileExtension}"
             process = (
-                self._processors[fileExtensionWithOption]
-                if fileExtensionWithOption in self._processors
-                else self._defaultProcessors
+                self._processors[fullFileName]
+                if fullFileName in self._processors
+                else (
+                    self._processors[fileExtensionWithOption]
+                    if fileExtensionWithOption in self._processors
+                    else self._defaultProcessors
+                )
             )
             process(listener, fileName, fileExtension, fileData)
 

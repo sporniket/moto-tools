@@ -54,6 +54,8 @@ FILE_LONG_NAME = "too_long_name.foo"
 FILE_LONG_EXTENSION = "too_long.extension"
 FILE_NOT_FOUND = "whatever.foo"
 
+FILE_AUTO = "auto.bat"
+
 COMMON_FILESET = [
     FILE_A,
     FILE_B,
@@ -607,3 +609,96 @@ TOTAL
             assert usage.reserved == 3
             assert usage.free == 157
             assert len(fs.listFiles()) == 0
+
+
+def test_that_auto_bat_is_stored_as_tokenized_basic():
+    sourceFileSet = [FILE_AUTO]
+    tmp_dir = initializeTmpWorkspace(
+        [os.path.join(source_dir, f) for f in sourceFileSet]
+    )
+    createdImageFile = os.path.join(tmp_dir, FILE_IMAGE)
+    baseArgs = ["prog", "--create", "--verbose", createdImageFile]
+    sourceArgs = sourceFileSet
+    with patch.object(
+        sys, "argv", baseArgs + [os.path.join(tmp_dir, f) for f in sourceArgs]
+    ):
+        with redirect_stdout(io.StringIO()) as out:
+            returnCode = DiskArchiveCli(
+                typeOfArchive=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+            ).run()
+        assert returnCode == 0
+        assert (
+            out.getvalue()
+            == f"""Side 0
+  AUTO.BAT  BASIC   TOKEN   ......      11 Bytes      1 block 
+1 file, 1 block written (0.6%)
+---
+Side 1
+empty, 0 blocks written (0.0%)
+---
+Side 2
+empty, 0 blocks written (0.0%)
+---
+Side 3
+empty, 0 blocks written (0.0%)
+---
+TOTAL
+1 file, 1 block written
+"""
+        )
+
+        # Verify archive file
+        assert os.path.exists(createdImageFile)
+        # -- load the binary file as DiskImage
+        with open(createdImageFile, mode="rb") as infile:
+            actualImageData = infile.read()
+        actualImage = DiskImage(
+            actualImageData, typeOfDiskImage=TypeOfDiskImage.EMULATOR_FLOPPY_IMAGE
+        )
+        # -- verify side 0
+        fs = FileSystemController(actualImage.sides[0])
+        usage = fs.computeUsage()
+        assert usage.used == 1
+        assert usage.reserved == 3
+        assert usage.free == 156
+        # -- -- get catalog and verify
+        catalog = fs.listFiles()
+        assert len(catalog) == 1
+        assert [f.toDict() for f in catalog] == [
+            {
+                "extension": "BAT",
+                "name": "AUTO    ",
+                "sizeInBlocks": 1,
+                "sizeInBytes": 11,
+                "status": "ALIVE",
+                "typeOfData": "TOKEN",
+                "typeOfFile": "BASIC",
+            },
+        ]
+        assert [fs.readFile(f) for f in catalog] == [
+            d
+            for d in [
+                "aaaaaaaaaa\n".encode(encoding="ascii"),
+            ]
+        ]
+        # -- verify side 1
+        fs = FileSystemController(actualImage.sides[1])
+        usage = fs.computeUsage()
+        assert usage.used == 0
+        assert usage.reserved == 3
+        assert usage.free == 157
+        assert len(fs.listFiles()) == 0
+        # -- verify side 2
+        fs = FileSystemController(actualImage.sides[2])
+        usage = fs.computeUsage()
+        assert usage.used == 0
+        assert usage.reserved == 3
+        assert usage.free == 157
+        assert len(fs.listFiles()) == 0
+        # -- verify side 3
+        fs = FileSystemController(actualImage.sides[3])
+        usage = fs.computeUsage()
+        assert usage.used == 0
+        assert usage.reserved == 3
+        assert usage.free == 157
+        assert len(fs.listFiles()) == 0
