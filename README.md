@@ -37,7 +37,15 @@ The current list of tools :
 
 ### Release notes
 
-#### V0.0.5
+#### v0.0.6
+
+Interim version, `moto_fdar`, the variant of `moto_sdar` that handle emulator floppy images, is available.
+
+* Resolves #48 : [moto_tar] Output the list of files when creating or extracting quietly
+* Resolves #50 : [moto_fdar] port moto_sdar to process *.fd images
+* Resolves #52 : [moto_sdar][moto_fdar] 'auto.bat' file MUST be flagged as tokenized basic file when creating/adding to a disk image archive
+
+#### v0.0.5
 
 Interim version, `moto_sdar` is now usable, but archives created with it need to be tested on emulators and real hardware.
 

@@ -1,6 +1,6 @@
 [project]
 name = "moto-tools-by-sporniket"
-version = "0.0.5"
+version = "0.0.6"
 authors = [
     {name = "Sporniket", email = "sporniket.studio@gmail.com"},
 ]
