@@ -58,6 +58,7 @@ Extract all the files contained inside a disk image archives.
 
 ### Archive creation
 
+* A file with the name `auto.bat` will be added as BASIC, tokenized files.
 * Files with the extension `bas` will be added as BASIC, tokenized files, unless they are suffixed with `,a` to be added as BASIC, ascii listing files.
 * Files with the extension `bin` will be added as binany module files.
 * Files with the extension `txt` will be added as ascii text files.
